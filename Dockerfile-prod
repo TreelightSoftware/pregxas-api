@@ -1,0 +1,8 @@
+FROM treelight/pregxas-api as base
+
+FROM busybox:glibc
+WORKDIR /go/src/github.com/treelightsoftware/pregxas-api
+COPY --from=base /go/src/github.com/treelightsoftware/pregxas-api/pregxas-api .
+COPY --from=base /etc/ssl/certs /etc/ssl/certs
+COPY --from=base /go/src/github.com/treelightsoftware/pregxas-api/sql ./sql
+CMD ["./pregxas-api"]
