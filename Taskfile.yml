@@ -1,0 +1,66 @@
+version: '2'
+vars:
+  MYSQLURL: "mysql://{{.PREGXAS_DB_USER}}:{{.PREGXAS_DB_PASSWORD}}@tcp({{.PREGXAS_DB_HOST}}:{{.PREGXAS_DB_PORT}})/{{.PREGXAS_DB_NAME}}"
+
+tasks:
+  build:
+    desc: Builds the API and generates a binary for the current OS
+    cmds:
+      - go build .
+
+  run:
+    desc: Builds and runs the service locally
+    deps: [build]
+    sources: 
+      - ./*.go
+    cmds:
+      - ./pregxas-api
+
+  vendor:
+    desc: Updates the vendor directory
+    cmds:
+      - dep ensure
+
+  test:
+    desc: Runs go test
+    cmds:
+      - go test -v ./api
+
+  cover:
+    desc: Runs coverage and generates the needed artifacts
+    cmds:
+      - go test -v -coverprofile=coverage.out ./api && gocover-cobertura < coverage.out > coverage.xml && go tool cover -html=coverage.out -o coverage.html
+
+  docs:
+    desc: Runs a godoc command locally
+    cmds:
+      - godoc -http=":6060"
+
+  docker-build:
+    desc: Builds and tags the docker image
+    cmds:
+      - docker build -t "treelight/pregxas-api:latest" .
+
+  docker-run:
+    desc: Runs the latest built docker image
+    deps: [docker-build]
+    cmds:
+      - docker run "treelight/pregxas-api"
+
+  docker-push:
+    desc: Builds and tags the docker image then pushes it to the hub
+    deps: [docker-build]
+    cmds:
+      - docker push "treelight/pregxas-api:latest"
+
+  docker-prod:
+    desc: Builds a slim production image.
+    deps: [docker-build]
+    cmds:
+      - docker build -f Dockerfile-prod -t "treelight/pregxas-api:prod" .
+      - docker push "treelight/pregxas-api:prod"
+  
+  db_up:
+    desc: Applies database migrations
+    cmds:
+      - migrate -path ./sql -database "{{.MYSQLURL}}" up
