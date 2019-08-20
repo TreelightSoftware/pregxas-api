@@ -1,0 +1,29 @@
+User:
+  type: object
+  properties:
+    id:
+      type: number
+    email:
+      type: string
+      format: email
+    firstName:
+      type: string
+    lastName:
+      type: string
+    username:
+      type: string
+    dateCreated:
+      type: string
+      format: date-time
+    lastLogin:
+      type: string
+      format: date-time
+    updated:
+      type: string
+      format: date-time
+    password:
+      type: string
+    status:
+      type: string
+    jwt:
+      type: string

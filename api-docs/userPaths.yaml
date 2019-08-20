@@ -1,0 +1,38 @@
+UserLoginPath:
+  post:
+    description: Login a user with an email address and password
+    operationId: Login
+    tags:
+      - User
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object 
+            required:
+              - email
+              - password
+            properties:
+              email:
+                type: string
+                format: email
+              password:
+                type: string
+                format: password
+    responses:
+      '200':
+        description: The user successfully logged in
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: 
+                data:
+                  $ref: 'userModel.yaml#/User'
+      '400':
+        $ref: "index.yaml#/components/responses/400Response"
+      '401':
+        $ref: "index.yaml#/components/responses/401Response"
+      '403':
+        $ref: "index.yaml#/components/responses/403Response"

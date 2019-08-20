@@ -1,0 +1,138 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: Pregxas API
+  description: |
+    The API for the Pregxas API
+
+    *Notice a bug? Something wrong? Want to provide feedback? Send us an email at support@treelightsoftware.com!*
+
+    *WARNING: Usage of non-documented APIs is not supported and may change without warning or notification!*
+
+  contact: 
+    name: Treelight Software
+    email: support@treelightsoftware.com
+    url: https://www.treelightsoftware.com
+
+servers:
+  - url: https://api.pregxas.com
+
+security:
+  - ApiKeyAuth: []
+
+tags:
+  $ref: "tags.yaml#/Tags"
+
+paths:
+ 
+  ## USERS ##
+  /users/login:
+    $ref: "userPaths.yaml#/UserLoginPath"
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: jwt
+
+  parameters:
+    email:
+      name: email
+      in: path
+      required: true
+      description: The email address
+      schema:
+        type: string
+    userId:
+      name: userId
+      in: path
+      required: true
+      description: The user's database id
+      schema:
+        type: integer
+    ## Filtering ##
+    start:
+      name: start
+      in: query
+      description: The UTC timestamp (YY-MM-DDTHH:mm:SSZ) of when to start the filtering
+      schema:
+        type: string
+        format: datetime
+    end:
+      name: end
+      in: query
+      description: The UTC timestamp (YY-MM-DDTHH:mm:SSZ) of when to end the filtering
+      schema:
+        type: string
+        format: datetime
+    count:
+      name: count
+      in: query
+      description: The maximum number of elements to return
+      schema:
+        type: integer
+    offset:
+      name: offset
+      in: query
+      description: The offset to begin the filtering by
+      schema:
+        type: integer
+    groupBy:
+      name: groupBy
+      in: query
+      description: What to group the elements by
+      schema:
+        type: string
+  
+  responses:
+    400Response:
+      description: Invalid request, typically due to missing or malformed parameters or body
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                description: The nature of the error
+    401Response:
+      description: Not authorized, perhaps due to a missing JWT or API key
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                description: The nature of the error
+    403Response:
+      description: Not allowed
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                description: The nature of the error
+    404Response:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                description: The nature of the error
+    409Response:
+      description: Conflict or already exists
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                description: The nature of the error
