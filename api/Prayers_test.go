@@ -138,4 +138,7 @@ func TestPrayerCRUD(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, int64(1), countInCommunity)
 
+	err = RemovePrayerRequestFromCommunity(request.ID, community.ID)
+	assert.Nil(t, err)
+
 }

@@ -14,3 +14,6 @@ coverage.*
 
 # the binary
 pregxas-api
+
+# doc node modules
+node_modules
