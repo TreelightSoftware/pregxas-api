@@ -59,7 +59,7 @@ func ConfigSetup() *ConfigStruct {
 	c.RootAPIURL = envHelper("PREGXAS_API_URL", fmt.Sprintf("http://localhost:%s/", c.RootAPIPort))
 	c.WebURL = envHelper("PREGXAS_WEB_URL", "http://localhost:3000/")
 
-	c.Environment = envHelper("PREGXAS_ENV", "develop")
+	c.Environment = envHelper("PREGXAS_ENV", "test")
 
 	c.MailgunPrivateKey = os.Getenv("PREGXAS_EMAIL_PRIVATE")
 	c.MailgunPublicKey = os.Getenv("PREGXAS_EMAIL_PUBLIC")
@@ -124,22 +124,27 @@ func ConfigSetup() *ConfigStruct {
 
 	c.DbConn = conn
 
+	// now the logger
+	c.Logger = logrus.New()
+	c.Logger.SetFormatter(&logrus.JSONFormatter{})
+
+	Config = &c
+
 	// if the database is empty, we need to set it up
-	_, err = c.DbConn.Exec("SELECT * FROM Users LIMIT 1")
-	if err != nil {
+	_, err = c.DbConn.Exec("SELECT * FROM Sites WHERE status = 'active' LIMIT 1")
+	if err != nil && (c.Environment == "production" || c.Environment == "develop") {
 		c.DbConn.Exec(fmt.Sprintf("CREATE DATABASE %s", c.dbName))
 		err = populateDB(c.dbUser, c.dbPassword, c.dbHost, c.dbPort, c.dbName)
 		if err != nil {
 			fmt.Printf("\n%+v\n", err)
 			panic("no database schema!")
 		}
+		// now we need to generate a secret key for logging in
+		key := GenerateSiteKey()
+		fmt.Printf(`\n---------------------------------------------\n-- Site Key: %s --\n---------------------------------------------\n`, key)
+		SetupInitialSite(key)
+		fmt.Println("Using the client of your choice, you must now setup your site. If you were not expecting this message, please ensure you setup your database correctly")
 	}
-
-	// now the logger
-	c.Logger = logrus.New()
-	c.Logger.SetFormatter(&logrus.JSONFormatter{})
-
-	Config = &c
 	return Config
 }
 
@@ -207,6 +212,10 @@ func SetupApp() *chi.Mux {
 	for _, m := range middlewares {
 		r.Use(m)
 	}
+
+	// site routes
+	r.Get("/admin/site", GetSiteInfoRoute)
+	r.Post("/admin/site", SetupSiteRoute)
 
 	// user routes
 	r.Get("/me", GetMyProfileRoute)

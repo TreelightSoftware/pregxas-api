@@ -100,3 +100,11 @@ CREATE TABLE `PrayerRequestTagLinks` (
   `prayerRequestId` int(11) NOT NULL,
   UNIQUE `tagPR` (`tagId`, `prayerRequestId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `Site` (
+  `name` varchar(128) NOT NULL DEFAULT 'Pregxas',
+  `description` varchar(1024) NOT NULL DEFAULT '',
+  `secretKey` varchar(32) NOT NULL,
+  `status` enum('pending_setup','active') NOT NULL DEFAULT 'pending_setup',
+  `logoLocation` varchar(256) NOT NULL DEFAULT ''
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

@@ -74,3 +74,14 @@ func GenerateRandomPassword(input *User) string {
 	token := "_" + hash[0:28]
 	return token
 }
+
+// GenerateSiteKey generates a new site key for setup
+func GenerateSiteKey() string {
+	randID := rand.NewSource(time.Now().UnixNano()).Int63()
+	str := fmt.Sprintf("%s-%d-^%s", time.Now().Format("2006-01-02-15:04:05"), randID, "pregxas-setup")
+	hasher := md5.New()
+	hasher.Write([]byte(str))
+	hash := hex.EncodeToString(hasher.Sum(nil))
+	token := "_" + hash[0:28]
+	return token
+}
