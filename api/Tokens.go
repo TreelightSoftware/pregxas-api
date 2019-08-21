@@ -85,3 +85,14 @@ func GenerateSiteKey() string {
 	token := "_" + hash[0:28]
 	return token
 }
+
+// GenerateShortCode generates a membership request token
+func GenerateShortCode(communityID, userID int64) string {
+	randID := rand.NewSource(time.Now().UnixNano()).Int63()
+	str := fmt.Sprintf("%s-%d-^%s!!%d<>%d", time.Now().Format("2006-01-02-15:04:05"), randID, "pregxas-request", communityID, userID)
+	hasher := md5.New()
+	hasher.Write([]byte(str))
+	hash := hex.EncodeToString(hasher.Sum(nil))
+	token := "_" + hash[0:9]
+	return token
+}

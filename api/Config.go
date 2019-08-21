@@ -214,17 +214,34 @@ func SetupApp() *chi.Mux {
 	}
 
 	// site routes
-	r.Get("/admin/site", GetSiteInfoRoute)
-	r.Post("/admin/site", SetupSiteRoute)
+	r.Get("/admin/site", GetSiteInfoRoute) // TODO: needs OAS3 docs
+	r.Post("/admin/site", SetupSiteRoute)  // TODO: needs OAS3 docs
 
 	// user routes
-	r.Get("/me", GetMyProfileRoute)
-	r.Patch("/me", UpdateMyProfileRoute)
-	r.Post("/users/login", LoginUserRoute)
-	r.Post("/users/signup", SignupUserRoute)
-	r.Post("/users/signup/verify", VerifyEmailAndTokenRoute)
-	r.Post("/users/login/reset", ResetPasswordStartRoute)
-	r.Post("/users/login/reset/verify", ResetPasswordVerifyRoute)
+	r.Get("/me", GetMyProfileRoute)                               // TODO: needs OAS3 docs
+	r.Patch("/me", UpdateMyProfileRoute)                          // TODO: needs OAS3 docs
+	r.Post("/users/login", LoginUserRoute)                        // TODO: needs OAS3 docs
+	r.Post("/users/signup", SignupUserRoute)                      // TODO: needs OAS3 docs
+	r.Post("/users/signup/verify", VerifyEmailAndTokenRoute)      // TODO: needs OAS3 docs
+	r.Post("/users/login/reset", ResetPasswordStartRoute)         // TODO: needs OAS3 docs
+	r.Post("/users/login/reset/verify", ResetPasswordVerifyRoute) // TODO: needs OAS3 docs
+
+	// communities
+	r.Post("/communities", CreateCommunityRoute)                 // TODO: needs OAS3 docs
+	r.Get("/communities", GetCommunitiesForUserRoute)            // TODO: needs OAS3 docs
+	r.Get("/communities/public", GetPublicCommunitiesRoute)      // TODO: needs OAS3 docs
+	r.Patch("/communities/{communityID}", UpdateCommunityRoute)  // TODO: needs OAS3 docs
+	r.Get("/communities/{communityID}", GetCommunityByIDRoute)   // TODO: needs OAS3 docs
+	r.Delete("/communities/{communityID}", DeleteCommunityRoute) // TODO: needs OAS3 docs
+
+	r.Post("/communities/{communityID}/subscribe", nil)
+	r.Delete("/communities/{communityID}/subscribe", nil)
+
+	// join requests
+	r.Get("/communities/{communityID}/users", GetCommunityLinksRoute)                     // this is for listing; TODO: needs OAS3 docs
+	r.Put("/communities/{communityID}/users/{userID}", RequestCommunityMembershipRoute)   // this is for requesting access or requesting a user to join; TODO: needs OAS3 docs
+	r.Delete("/communities/{communityID}/users/{userID}", RemoveCommunityMembershipRoute) // this is for removing a request; TODO: needs OAS3 docs
+	r.Post("/communities/{communityID}/users/{userID}", ProcessCommunityMembershipRoute)  // this is for approving; TODO: needs OAS3 docs
 
 	// prayer requests
 

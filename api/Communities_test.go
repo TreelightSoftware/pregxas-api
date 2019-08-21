@@ -85,7 +85,7 @@ func TestCommunityUserLinks(t *testing.T) {
 	defer DeleteCommunity(community.ID)
 
 	// join them
-	err = CreateCommunityUserLink(community.ID, user.ID, "", "invited") // blank should default to member
+	err = CreateCommunityUserLink(community.ID, user.ID, "", "invited", "abc") // blank should default to member
 	assert.Nil(t, err)
 
 	// find it
