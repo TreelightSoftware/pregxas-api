@@ -294,3 +294,100 @@ func TestPrayerRequestCRUDRoutes(t *testing.T) {
 	code, res, _ = TestAPICall(http.MethodGet, fmt.Sprintf("/requests/%d", request.ID), b, GetPrayerRequestByIDRoute, admin.JWT, "")
 	require.Equal(t, http.StatusForbidden, code)
 }
+
+func TestPrayerRoutes(t *testing.T) {
+	ConfigSetup()
+	b := new(bytes.Buffer)
+	enc := json.NewEncoder(b)
+
+	admin := User{}
+	err := CreateTestUser(&admin)
+	assert.Nil(t, err)
+	defer DeleteUserFromTest(&admin)
+
+	user := User{}
+	err = CreateTestUser(&user)
+	assert.Nil(t, err)
+	defer DeleteUserFromTest(&user)
+
+	community := Community{
+		Name:             "Test Community",
+		Privacy:          "public",
+		UserSignupStatus: "approval_required",
+	}
+	err = CreateCommunity(&community)
+	require.Nil(t, err)
+	defer DeleteCommunity(community.ID)
+	err = CreateCommunityUserLink(community.ID, admin.ID, "admin", "accepted", "")
+	require.Nil(t, err)
+
+	// create a request
+	requestInput := PrayerRequest{
+		Title:   "Test Request",
+		Body:    "Please pray for this to work",
+		Privacy: "public",
+	}
+
+	b.Reset()
+	enc.Encode(&requestInput)
+	code, res, _ := TestAPICall(http.MethodPost, "/requests", b, CreatePrayerRequestRoute, admin.JWT, "")
+	require.Equal(t, http.StatusCreated, code)
+	_, body, _ := UnmarshalTestMap(res)
+	request := PrayerRequest{}
+	mapstructure.Decode(body, &request)
+	assert.Equal(t, requestInput.Title, request.Title)
+	assert.Equal(t, requestInput.Body, request.Body)
+	assert.Equal(t, "public", request.Privacy)
+	defer DeletePrayerRequest(request.ID)
+
+	// add the prayer by user
+	code, res, _ = TestAPICall(http.MethodPost, fmt.Sprintf("/requests/%d/prayers", request.ID), b, CreatePrayerRequestRoute, user.JWT, "")
+	require.Equal(t, http.StatusOK, code)
+
+	code, res, _ = TestAPICall(http.MethodGet, fmt.Sprintf("/requests/%d", request.ID), b, GetPrayerRequestByIDRoute, admin.JWT, "")
+	require.Equal(t, http.StatusOK, code)
+	_, body, _ = UnmarshalTestMap(res)
+	foundRequest := PrayerRequest{}
+	mapstructure.Decode(body, &foundRequest)
+	assert.Equal(t, 1, foundRequest.PrayerCount)
+
+	// doing it again should result in an error
+	code, res, _ = TestAPICall(http.MethodPost, fmt.Sprintf("/requests/%d/prayers", request.ID), b, CreatePrayerRequestRoute, user.JWT, "")
+	require.Equal(t, http.StatusBadRequest, code)
+
+	// admin adds a prayer as well
+	code, res, _ = TestAPICall(http.MethodPost, fmt.Sprintf("/requests/%d/prayers", request.ID), b, CreatePrayerRequestRoute, admin.JWT, "")
+	require.Equal(t, http.StatusOK, code)
+
+	code, res, _ = TestAPICall(http.MethodGet, fmt.Sprintf("/requests/%d", request.ID), b, GetPrayerRequestByIDRoute, admin.JWT, "")
+	require.Equal(t, http.StatusOK, code)
+	_, body, _ = UnmarshalTestMap(res)
+	foundRequest = PrayerRequest{}
+	mapstructure.Decode(body, &foundRequest)
+	assert.Equal(t, 2, foundRequest.PrayerCount)
+
+	// gets the prayers made
+	code, res, _ = TestAPICall(http.MethodGet, fmt.Sprintf("/requests/%d/prayers", request.ID), b, GetPrayersMadeOnRequestRoute, user.JWT, "")
+	require.Equal(t, http.StatusOK, code)
+	_, body, _ = UnmarshalTestMap(res)
+	assert.False(t, body["canSubmit"].(bool))
+	assert.True(t, body["minutesUntilNextPrayer"].(float64) > 0)
+	// get the last prayer so we can delete it
+	whenPrayed := ""
+	prayers := body["prayers"].([]interface{})
+	require.NotZero(t, len(prayers))
+	p := Prayer{}
+	mapstructure.Decode(prayers[0], &p)
+	whenPrayed = p.WhenPrayed
+
+	// delete it and get it again
+	code, res, _ = TestAPICall(http.MethodDelete, fmt.Sprintf("/requests/%d/prayers?whenPrayed=%s", request.ID, whenPrayed), b, RemovePrayerMadeOnRequestRoute, user.JWT, "")
+	require.Equal(t, http.StatusOK, code)
+
+	code, res, _ = TestAPICall(http.MethodGet, fmt.Sprintf("/requests/%d", request.ID), b, GetPrayerRequestByIDRoute, admin.JWT, "")
+	require.Equal(t, http.StatusOK, code)
+	_, body, _ = UnmarshalTestMap(res)
+	foundRequest = PrayerRequest{}
+	mapstructure.Decode(body, &foundRequest)
+	assert.Equal(t, 1, foundRequest.PrayerCount)
+}
