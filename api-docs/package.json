@@ -1,0 +1,19 @@
+{
+  "name": "pregxas-api-docs",
+  "version": "1.0.0",
+  "description": "The api docs for the Pregxas API",
+  "main": "index.yaml",
+  "scripts": {
+    "lint": "node ./node_modules/speccy/speccy.js lint index.yaml",
+    "combine": "node ./node_modules/speccy/speccy.js resolve -o combined.yaml index.yaml",
+    "preview": "npm run combine && node ./node_modules/speccy/speccy.js serve combined.yaml",
+    "generate": "./node_modules/api-spec-converter/bin/api-spec-converter -f openapi_3 -t openapi_3 -s json combined.yaml > api.json",
+    "build": "npm run combine && npm run generate && cp api.json build/"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "api-spec-converter": "^2.9.1",
+    "speccy": "^0.11.0"
+  }
+}

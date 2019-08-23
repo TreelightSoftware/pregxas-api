@@ -9,8 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/didip/tollbooth"
-	"github.com/didip/tollbooth_chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
 	"github.com/goware/cors"
@@ -69,14 +67,14 @@ func SendError(w http.ResponseWriter, status int, systemCode string, message str
 // - CORS
 //
 func GetMiddlewares() []func(http.Handler) http.Handler {
-	limiter := tollbooth.NewLimiter(Config.RateLimit, nil)
 	handlers := []func(http.Handler) http.Handler{}
 
-	h := tollbooth_chi.LimitHandler(limiter)
+	h := middleware.RequestID
 	handlers = append(handlers, h)
 
-	h = middleware.RequestID
-	handlers = append(handlers, h)
+	// limiter := tollbooth.NewLimiter(Config.RateLimit, nil)
+	// h := tollbooth_chi.LimitHandler(limiter)
+	// handlers = append(handlers, h)
 
 	h = middleware.RealIP
 	handlers = append(handlers, h)

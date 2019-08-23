@@ -1,15 +1,19 @@
 package api
 
 import (
+	"fmt"
+	"strings"
 	"time"
 )
 
 // Community is a group or organization that ties users together
 type Community struct {
-	ID        int64  `json:"id" db:"id"`
-	Name      string `json:"name" db:"name"`
-	ShortCode string `json:"shortCode" db:"shortCode"`
-	Created   string `json:"created" db:"created"`
+	ID          int64  `json:"id" db:"id"`
+	Name        string `json:"name" db:"name"`
+	Description string `json:"description" db:"description"`
+	ShortCode   string `json:"shortCode" db:"shortCode"`
+	Created     string `json:"created" db:"created"`
+	Privacy     string `json:"privacy" db:"privacy"`
 	// UserSignupStatus is a setting that sets the default status of users who sign up
 	UserSignupStatus    string `json:"userSignupStatus" db:"userSignupStatus"`
 	Plan                string `json:"plan" db:"plan"`
@@ -20,6 +24,44 @@ type Community struct {
 	UserStatus string `json:"userStatus" db:"userStatus"`
 	// UserRole is only populated in queries in which a user is joined or invited to a community
 	UserRole string `json:"userRole" db:"userRole"`
+}
+
+// CommunityUserLink is a link between a user and a community
+type CommunityUserLink struct {
+	UserID      int64  `json:"userId" db:"userId"`
+	CommunityID int64  `json:"communityId" db:"communityId"`
+	Role        string `json:"role" db:"role"`
+	Status      string `json:"status" db:"status"`
+	ShortCode   string `json:"shortCode" db:"shortCode"`
+	FirstName   string `json:"firstName" db:"firstName"`
+	LastName    string `json:"lastName" db:"lastName"`
+	Email       string `json:"email" db:"email"`
+	Username    string `json:"username" db:"username"`
+}
+
+// CommunityPlan is the details for the plans
+type CommunityPlan struct {
+	AllowedUsers          int64 `json:"allowedUsers"`
+	AllowedActiveRequests int64 `json:"allowedActiveRequests"`
+	MonthlyPrice          int64 `json:"monthlyPrice"`
+}
+
+var plans = map[string]CommunityPlan{
+	CommunityPlanFree: CommunityPlan{
+		AllowedUsers:          100,
+		AllowedActiveRequests: 100,
+		MonthlyPrice:          0,
+	},
+	CommunityPlanBasic: CommunityPlan{
+		AllowedUsers:          200,
+		AllowedActiveRequests: 500,
+		MonthlyPrice:          499,
+	},
+	CommunityPlanPro: CommunityPlan{
+		AllowedUsers:          2000,
+		AllowedActiveRequests: 4000,
+		MonthlyPrice:          999,
+	},
 }
 
 const (
@@ -43,6 +85,21 @@ const (
 
 	// CommunityUserLinkStatusDeclined indicates a user has been denied access to a community
 	CommunityUserLinkStatusDeclined = "declined"
+
+	// CommunityPrivacyPrivate is a private community not listed in the public directory
+	CommunityPrivacyPrivate = "private"
+
+	// CommunityPrivacyPublic means the community is listed in the public directory
+	CommunityPrivacyPublic = "public"
+
+	// CommunityPlanFree is a basic free community
+	CommunityPlanFree = "free"
+
+	// CommunityPlanBasic represents the basic plan, allowing more users and requests
+	CommunityPlanBasic = "basic"
+
+	// CommunityPlanPro represents the pro plan, which allows unlimited requests and users
+	CommunityPlanPro = "pro"
 )
 
 // GetCommunityByShortCode gets a community by its short code
@@ -65,8 +122,8 @@ func GetCommunityByID(id int64) (*Community, error) {
 func CreateCommunity(input *Community) error {
 	input.processForDB()
 	defer input.processForAPI()
-	result, err := Config.DbConn.NamedExec(`INSERT INTO Communities (name, shortCode, created, userSignupStatus)
-		VALUES (:name, :shortCode, NOW(), :userSignupStatus)`, input)
+	result, err := Config.DbConn.NamedExec(`INSERT INTO Communities (name, description, shortCode, created, userSignupStatus, privacy)
+		VALUES (:name, :description, :shortCode, NOW(), :userSignupStatus, :privacy)`, input)
 	if err != nil {
 		return err
 	}
@@ -78,7 +135,7 @@ func CreateCommunity(input *Community) error {
 func UpdateCommunity(input *Community) error {
 	input.processForDB()
 	defer input.processForAPI()
-	_, err := Config.DbConn.NamedExec(`UPDATE Communities SET name = :name, shortCode = :shortCode, userSignupStatus = :userSignupStatus WHERE id = :id`, input)
+	_, err := Config.DbConn.NamedExec(`UPDATE Communities SET name = :name, description = :description, shortCode = :shortCode, userSignupStatus = :userSignupStatus, privacy = :privacy WHERE id = :id`, input)
 	return err
 }
 
@@ -89,15 +146,22 @@ func DeleteCommunity(id int64) error {
 		return err
 	}
 	_, err = Config.DbConn.Exec("DELETE FROM CommunityUserLinks WHERE communityId = ?", id)
-	return err
+	if err != nil {
+		return err
+	}
+	_, err = Config.DbConn.Exec("DELETE FROM PrayerRequestCommunityLinks WHERE communityId = ?", id)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // CreateCommunityUserLink creates a new link between a user and a community
-func CreateCommunityUserLink(communityID, userID int64, role, status string) error {
+func CreateCommunityUserLink(communityID, userID int64, role, status, shortCode string) error {
 	if role == "" {
 		role = "member"
 	}
-	_, err := Config.DbConn.Exec("INSERT INTO CommunityUserLinks (communityId, userId, role, status) VALUES (?, ?, ?, ?)", communityID, userID, role, status)
+	_, err := Config.DbConn.Exec("INSERT INTO CommunityUserLinks (communityId, userId, role, status, shortCode) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE userId = userId", communityID, userID, role, status, shortCode)
 	return err
 }
 
@@ -111,6 +175,41 @@ func UpdateCommunityUserLink(communityID, userID int64, status string) error {
 func DeleteCommunityUserLink(communityID, userID int64) error {
 	_, err := Config.DbConn.Exec("DELETE FROM CommunityUserLinks WHERE communityId = ? AND userId = ?", communityID, userID)
 	return err
+}
+
+// GetCommunityUserLinks gets the links for a community optionally filtered by status
+func GetCommunityUserLinks(communityID int64, status string) ([]CommunityUserLink, error) {
+	links := []CommunityUserLink{}
+	var err error
+	if status != "invited" && status != "requested" && status != "accepted" && status != "declined" {
+		err = Config.DbConn.Select(&links, `SELECT cul.*, u.firstName, u.lastName, u.email, u.username FROM CommunityUserLinks cul, Users u 
+			WHERE cul.communityId = ? AND cul.userId = u.id ORDER BY u.username`, communityID)
+	} else {
+		err = Config.DbConn.Select(&links, `SELECT cul.*, u.firstName, u.lastName, u.email, u.username FROM CommunityUserLinks cul, Users u 
+			WHERE cul.communityId = ? AND cul.status = ? AND cul.userId = u.id ORDER BY u.username`, communityID, status)
+	}
+	return links, err
+}
+
+// GetCommunityUserLink gets the individual link, used for processing
+func GetCommunityUserLink(communityID, userID int64) (CommunityUserLink, error) {
+	link := CommunityUserLink{}
+	err := Config.DbConn.Get(&link, `SELECT cul.*, u.firstName, u.lastName, u.email, u.username FROM CommunityUserLinks cul, Users u 
+		WHERE cul.communityId = ? AND cul.userId = ? AND cul.userId = u.id ORDER BY u.username`, communityID, userID)
+
+	return link, err
+}
+
+// GetUserRoleForCommunity gets the user's role for the community
+func GetUserRoleForCommunity(communityID, userID int64) (string, error) {
+	role := struct {
+		Role string `db:"role"`
+	}{}
+	err := Config.DbConn.Get(&role, "SELECT role FROM CommunityUserLinks WHERE userId = ? AND communityId = ? AND status = 'accepted'", userID, communityID)
+	if err != nil {
+		return "", err
+	}
+	return role.Role, nil
 }
 
 // GetCountOfUsersInCommunity gets the count of users in a community
@@ -128,6 +227,29 @@ func GetCommunitiesForUser(userID int64) ([]Community, error) {
 	comms := []Community{}
 	err := Config.DbConn.Select(&comms, `SELECT c.*, cul.status AS userStatus, cul.role as userRole 
 		FROM Communities c, CommunityUserLinks cul WHERE cul.userId = ? AND cul.communityId = c.id ORDER BY c.name`, userID)
+	for i := range comms {
+		comms[i].processForAPI()
+	}
+	return comms, err
+}
+
+// GetPublicCommunities gets the public communities, sorted by either name or created
+func GetPublicCommunities(sortField, sortDir string, count, offset int) ([]Community, error) {
+	comms := []Community{}
+
+	// generally, string interpolation on SQL is Very Bad, but this is white listed so there is no
+	// security concerns
+	sortDir = strings.ToUpper(sortDir)
+	if sortDir != "DESC" {
+		sortDir = "ASC"
+	}
+	sortField = strings.ToLower(sortField)
+	if sortField != "name" && sortField != "created" {
+		sortField = "name"
+	}
+	err := Config.DbConn.Select(&comms, fmt.Sprintf(`SELECT c.* FROM Communities c
+	WHERE c.privacy = 'public' ORDER BY c.%s %s LIMIT ?,?`, sortField, sortDir), offset, count)
+
 	for i := range comms {
 		comms[i].processForAPI()
 	}
@@ -167,6 +289,9 @@ func (input *Community) processForDB() {
 	}
 	if input.UserSignupStatus == "" {
 		input.UserSignupStatus = CommunityUserSignupStatusApproval
+	}
+	if input.Privacy == "" {
+		input.Privacy = "private"
 	}
 }
 

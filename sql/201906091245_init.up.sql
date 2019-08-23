@@ -17,8 +17,10 @@ CREATE TABLE `Users` (
 CREATE TABLE `Communities` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(128) NOT NULL DEFAULT '',
+  `description` varchar(1024) NOT NULL DEFAULT '',
   `shortCode` varchar(24) NOT NULL DEFAULT '',
   `created` datetime NOT NULL,
+  `privacy` ENUM('private', 'public') NOT NULL DEFAULT 'private',
   `userSignupStatus` ENUM('none', 'approval_required', 'auto_accept') NOT NULL DEFAULT 'auto_accept', 
   -- none = no user can signup; approval_required = admin must approve; auto_accept = users automatically accepted
   `plan` ENUM('free','basic','pro') NOT NULL DEFAULT 'free', -- the plan for the community, which essentially just places limits on what they can do
@@ -99,4 +101,12 @@ CREATE TABLE `PrayerRequestTagLinks` (
   `tagId` int(11) NOT NULL,
   `prayerRequestId` int(11) NOT NULL,
   UNIQUE `tagPR` (`tagId`, `prayerRequestId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `Site` (
+  `name` varchar(128) NOT NULL DEFAULT 'Pregxas',
+  `description` varchar(1024) NOT NULL DEFAULT '',
+  `secretKey` varchar(32) NOT NULL,
+  `status` enum('pending_setup','active') NOT NULL DEFAULT 'pending_setup',
+  `logoLocation` varchar(256) NOT NULL DEFAULT ''
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

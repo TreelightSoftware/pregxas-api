@@ -59,7 +59,7 @@ func ConfigSetup() *ConfigStruct {
 	c.RootAPIURL = envHelper("PREGXAS_API_URL", fmt.Sprintf("http://localhost:%s/", c.RootAPIPort))
 	c.WebURL = envHelper("PREGXAS_WEB_URL", "http://localhost:3000/")
 
-	c.Environment = envHelper("PREGXAS_ENV", "develop")
+	c.Environment = envHelper("PREGXAS_ENV", "test")
 
 	c.MailgunPrivateKey = os.Getenv("PREGXAS_EMAIL_PRIVATE")
 	c.MailgunPublicKey = os.Getenv("PREGXAS_EMAIL_PUBLIC")
@@ -124,22 +124,27 @@ func ConfigSetup() *ConfigStruct {
 
 	c.DbConn = conn
 
+	// now the logger
+	c.Logger = logrus.New()
+	c.Logger.SetFormatter(&logrus.JSONFormatter{})
+
+	Config = &c
+
 	// if the database is empty, we need to set it up
-	_, err = c.DbConn.Exec("SELECT * FROM Users LIMIT 1")
-	if err != nil {
+	_, err = c.DbConn.Exec("SELECT * FROM Sites WHERE status = 'active' LIMIT 1")
+	if err != nil && (c.Environment == "production" || c.Environment == "develop") {
 		c.DbConn.Exec(fmt.Sprintf("CREATE DATABASE %s", c.dbName))
 		err = populateDB(c.dbUser, c.dbPassword, c.dbHost, c.dbPort, c.dbName)
 		if err != nil {
 			fmt.Printf("\n%+v\n", err)
 			panic("no database schema!")
 		}
+		// now we need to generate a secret key for logging in
+		key := GenerateSiteKey()
+		fmt.Printf(`\n---------------------------------------------\n-- Site Key: %s --\n---------------------------------------------\n`, key)
+		SetupInitialSite(key)
+		fmt.Println("Using the client of your choice, you must now setup your site. If you were not expecting this message, please ensure you setup your database correctly")
 	}
-
-	// now the logger
-	c.Logger = logrus.New()
-	c.Logger.SetFormatter(&logrus.JSONFormatter{})
-
-	Config = &c
 	return Config
 }
 
@@ -208,18 +213,53 @@ func SetupApp() *chi.Mux {
 		r.Use(m)
 	}
 
+	// site routes
+	r.Get("/admin/site", GetSiteInfoRoute) // TODO: needs OAS3 docs
+	r.Post("/admin/site", SetupSiteRoute)  // TODO: needs OAS3 docs
+
 	// user routes
-	r.Get("/me", GetMyProfileRoute)
-	r.Patch("/me", UpdateMyProfileRoute)
-	r.Post("/users/login", LoginUserRoute)
-	r.Post("/users/signup", SignupUserRoute)
-	r.Post("/users/signup/verify", VerifyEmailAndTokenRoute)
-	r.Post("/users/login/reset", ResetPasswordStartRoute)
-	r.Post("/users/login/reset/verify", ResetPasswordVerifyRoute)
+	r.Get("/me", GetMyProfileRoute)                               // TODO: needs OAS3 docs
+	r.Patch("/me", UpdateMyProfileRoute)                          // TODO: needs OAS3 docs
+	r.Post("/users/login", LoginUserRoute)                        // TODO: needs OAS3 docs
+	r.Post("/users/signup", SignupUserRoute)                      // TODO: needs OAS3 docs
+	r.Post("/users/signup/verify", VerifyEmailAndTokenRoute)      // TODO: needs OAS3 docs
+	r.Post("/users/login/reset", ResetPasswordStartRoute)         // TODO: needs OAS3 docs
+	r.Post("/users/login/reset/verify", ResetPasswordVerifyRoute) // TODO: needs OAS3 docs
+
+	// communities
+	r.Post("/communities", CreateCommunityRoute)                 // TODO: needs OAS3 docs
+	r.Get("/communities", GetCommunitiesForUserRoute)            // TODO: needs OAS3 docs
+	r.Get("/communities/public", GetPublicCommunitiesRoute)      // TODO: needs OAS3 docs
+	r.Patch("/communities/{communityID}", UpdateCommunityRoute)  // TODO: needs OAS3 docs
+	r.Get("/communities/{communityID}", GetCommunityByIDRoute)   // TODO: needs OAS3 docs
+	r.Delete("/communities/{communityID}", DeleteCommunityRoute) // TODO: needs OAS3 docs
+
+	r.Post("/communities/{communityID}/subscribe", nil)
+	r.Delete("/communities/{communityID}/subscribe", nil)
+
+	// join requests
+	r.Get("/communities/{communityID}/users", GetCommunityLinksRoute)                     // this is for listing; TODO: needs OAS3 docs
+	r.Put("/communities/{communityID}/users/{userID}", RequestCommunityMembershipRoute)   // this is for requesting access or requesting a user to join; TODO: needs OAS3 docs
+	r.Delete("/communities/{communityID}/users/{userID}", RemoveCommunityMembershipRoute) // this is for removing a request; TODO: needs OAS3 docs
+	r.Post("/communities/{communityID}/users/{userID}", ProcessCommunityMembershipRoute)  // this is for approving; TODO: needs OAS3 docs
 
 	// prayer requests
+	r.Get("/requests", GetGlobalPrayerRequestsRoute)
+	r.Post("/requests", CreatePrayerRequestRoute)
+	r.Get("/requests/{requestID}", GetPrayerRequestByIDRoute)
+	r.Patch("/requests/{requestID}", UpdatePrayerRequestRoute)
+	r.Delete("/requests/{requestID}", DeletePrayerRequestRoute)
+
+	r.Get("/users/{userID}/requests", GetUserPrayerRequestsRoute)
+
+	r.Get("/communities/{communityID}/requests", GetCommunityPrayerRequestsRoute)
+	r.Put("/communities/{communityID}/requests/{requestID}", AddPrayerRequestToCommunityRoute)
+	r.Delete("/communities/{communityID}/requests/{requestID}", RemovePrayerRequestFromCommunityRoute)
 
 	// prayers made
+	r.Get("/requests/{requestID}/prayers", nil)
+	r.Post("/requests/{requestID}/prayers", nil)
+	r.Delete("/requests/{requestID}/prayers", nil)
 
 	return r
 }

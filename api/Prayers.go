@@ -30,6 +30,7 @@ type PrayerRequest struct {
 	Status      string   `json:"status" db:"status"`
 	Tags        []string `json:"tags" db:"-"`
 	PrayerCount int      `json:"prayerCount" db:"prayerCount"`
+	Username    string   `json:"username" db:"username"`
 }
 
 // Prayer represents a prayer made towards a request
@@ -94,6 +95,30 @@ func GetPrayerRequest(id int64) (*PrayerRequest, error) {
 		FROM PrayerRequests pr WHERE pr.id = ? LIMIT 1`, id)
 	request.processForAPI()
 	return &request, err
+}
+
+// GetGlobalPrayerRequests gets the public prayer request feed
+func GetGlobalPrayerRequests(count, offset int) []PrayerRequest {
+	requests := []PrayerRequest{}
+	Config.DbConn.Select(&requests, `SELECT pr.*, u.username, (SELECT COUNT(*) FROM Prayers p WHERE p.prayerRequestId = pr.id) AS prayerCount 
+		FROM PrayerRequests pr, Users u WHERE pr.privacy = 'public' AND pr.createdBy = u.id ORDER BY pr.dateCreated DESC LIMIT ?,?`, offset, count)
+	return requests
+}
+
+// GetPrayerRequestsForCommunity gets the requests in a community
+func GetPrayerRequestsForCommunity(communityID int64, status string, count, offset int) []PrayerRequest {
+	requests := []PrayerRequest{}
+
+	if status == "pending" || status == "answered" || status == "not_answered" || status == "unknown" {
+		Config.DbConn.Select(&requests, `SELECT pr.*, u.username, (SELECT COUNT(*) FROM Prayers p WHERE p.prayerRequestId = pr.id) AS prayerCount 
+			FROM PrayerRequests pr, Users u, PrayerRequestCommunityLinks prcl 
+			WHERE prcl.communityId = ? AND prcl.prayerRequestId = pr.id AND pr.createdBy = u.id AND pr.status = ? ORDER BY pr.dateCreated DESC LIMIT ?,?`, communityID, status, offset, count)
+	} else {
+		Config.DbConn.Select(&requests, `SELECT pr.*, u.username, (SELECT COUNT(*) FROM Prayers p WHERE p.prayerRequestId = pr.id) AS prayerCount 
+			FROM PrayerRequests pr, Users u, PrayerRequestCommunityLinks prcl 
+			WHERE prcl.communityId = ? AND prcl.prayerRequestId = pr.id AND pr.createdBy = u.id ORDER BY pr.dateCreated DESC LIMIT ?,?`, communityID, offset, count)
+	}
+	return requests
 }
 
 // GetUserPrayerRequests gets the requests submitted by a user
@@ -187,6 +212,13 @@ func RemovePrayerRequestFromCommunity(requestID, communityID int64) error {
 	return err
 }
 
+// GetCommunitiesPrayerRequestIsIn gets a list of communities a prayer request has been added to
+func GetCommunitiesPrayerRequestIsIn(requestID int64) ([]Community, error) {
+	comms := []Community{}
+	err := Config.DbConn.Select(&comms, `SELECT c.* FROM Communities c, PrayerRequestCommunityLinks prcl WHERE prcl.prayerRequestId = ? AND prcl.communityId = c.id ORDER BY c.name`, requestID)
+	return comms, err
+}
+
 // GetCountOfRequestsInCommunity gets the number of requests in a community within a time frame
 func GetCountOfRequestsInCommunity(communityID int64, start, end string) (int64, error) {
 	count := struct {
@@ -214,6 +246,29 @@ func GetCountOfPrayersMadeForRequest(requestID int64, start, end string) (count 
 		Config.DbConn.Get(&countStruct, "SELECT COUNT(*) AS count FROM Prayers WHERE prayerRequestId = ?", requestID)
 	}
 	return countStruct.Count
+}
+
+// IsUserAndRequestInSameGroup is a healper to see if a user can view a private prayer request due to being in the same community as the request
+func IsUserAndRequestInSameGroup(userID, requestID int64) bool {
+	// first, get the groups for the request and the groups for the user
+	prComms, err := GetCommunitiesPrayerRequestIsIn(requestID)
+	if err != nil {
+		return false
+	}
+	userComms, err := GetCommunitiesForUser(userID)
+	if err != nil {
+		return false
+	}
+	// now a nested loop to see if we can find it
+	// since the lists aren't all that large, this shouldn't be too painful
+	for i := range prComms {
+		for j := range userComms {
+			if prComms[i].ID == userComms[j].ID && userComms[j].UserRole == "member" {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // processForDB ensures data consistency
