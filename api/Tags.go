@@ -22,7 +22,7 @@ func AddTagToPrayerRequest(prayerRequestID int64, tag string) (PrayerRequestTag,
 	found, err := GetTagIDByTag(tag)
 	if err != nil || found.ID == 0 {
 		// we need to create the tag
-		res, err := Config.DbConn.Exec("INSERT INTO PrayerRequestTags (tag) VALUES (?)", tag)
+		res, err := Config.DbConn.Exec("INSERT INTO PrayerRequestTags (tag) VALUES (?) ON DUPLICATE KEY UPDATE tag = tag", tag)
 		if err != nil {
 			return found, err
 		}

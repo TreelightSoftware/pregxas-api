@@ -14,7 +14,6 @@ import (
 
 func TestCommunityCRUDRoutes(t *testing.T) {
 	ConfigSetup()
-	// randID := rand.Int63n(99999999)
 	b := new(bytes.Buffer)
 	enc := json.NewEncoder(b)
 
