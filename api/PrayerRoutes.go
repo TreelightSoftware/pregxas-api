@@ -322,5 +322,136 @@ func RemovePrayerRequestFromCommunityRoute(w http.ResponseWriter, r *http.Reques
 		"removed": true,
 	})
 	return
+}
 
+// AddPrayerToRequestRoute adds a prayer made to a request
+func AddPrayerToRequestRoute(w http.ResponseWriter, r *http.Request) {
+	jwtUser, err := CheckForUser(r)
+	if err != nil || jwtUser.ID == 0 {
+		SendError(w, http.StatusForbidden, "permission_denied", "you don't have permission", nil)
+		return
+	}
+
+	requestID, requestIDErr := strconv.ParseInt(chi.URLParam(r, "requestID"), 10, 64)
+	if requestIDErr != nil {
+		SendError(w, http.StatusForbidden, "permission_denied", "you don't have permission", nil)
+		return
+	}
+
+	// get the request to ensure permissions
+	request, err := GetPrayerRequest(requestID)
+	if err != nil {
+		SendError(w, http.StatusForbidden, "permission_denied", "you don't have permission", nil)
+		return
+	}
+
+	canSubmit, minutesUntilNext := CanUserMakeNewPrayer(jwtUser.ID, requestID)
+	allowed := false
+	if request.Privacy == "public" || request.CreatedBy == jwtUser.ID || IsUserAndRequestInSameGroup(jwtUser.ID, requestID) {
+		allowed = true
+	}
+
+	if !allowed {
+		SendError(w, http.StatusForbidden, "permission_denied", "you don't have permission", nil)
+		return
+	}
+
+	if !canSubmit {
+		SendError(w, http.StatusBadRequest, "prayer_add_cannot_submit", "cannot add prayer", map[string]interface{}{
+			"prayerAdded":            false,
+			"minutesUntilNextPrayer": minutesUntilNext,
+		})
+		return
+	}
+
+	err = AddPrayerMade(jwtUser.ID, request.ID)
+	if err != nil {
+		SendError(w, http.StatusBadRequest, "prayer_add_cannot_submit", "cannot add prayer", err)
+		return
+	}
+
+	Send(w, http.StatusOK, map[string]interface{}{
+		"prayerAdded":            true,
+		"minutesUntilNextPrayer": minutesUntilNext,
+		"totalPrayers":           request.PrayerCount + 1,
+	})
+	return
+}
+
+// GetPrayersMadeOnRequestRoute gets the requests made on a prayer for a user
+func GetPrayersMadeOnRequestRoute(w http.ResponseWriter, r *http.Request) {
+	jwtUser, err := CheckForUser(r)
+	if err != nil || jwtUser.ID == 0 {
+		SendError(w, http.StatusForbidden, "permission_denied", "you don't have permission", nil)
+		return
+	}
+
+	requestID, requestIDErr := strconv.ParseInt(chi.URLParam(r, "requestID"), 10, 64)
+	if requestIDErr != nil {
+		SendError(w, http.StatusForbidden, "permission_denied", "you don't have permission", nil)
+		return
+	}
+
+	// get the request to ensure permissions
+	request, err := GetPrayerRequest(requestID)
+	if err != nil {
+		SendError(w, http.StatusForbidden, "permission_denied", "you don't have permission", nil)
+		return
+	}
+
+	allowed := false
+	if request.Privacy == "public" || request.CreatedBy == jwtUser.ID || IsUserAndRequestInSameGroup(jwtUser.ID, requestID) {
+		allowed = true
+	}
+
+	if !allowed {
+		SendError(w, http.StatusForbidden, "permission_denied", "you don't have permission", nil)
+		return
+	}
+
+	prayers, _ := GetPrayersMadeByUserForRequest(jwtUser.ID, request.ID, 10000, 0)
+	canSubmit, minutesUntilNext := CanUserMakeNewPrayer(jwtUser.ID, request.ID)
+
+	Send(w, http.StatusOK, map[string]interface{}{
+		"prayers":                prayers,
+		"canSubmit":              canSubmit,
+		"minutesUntilNextPrayer": minutesUntilNext,
+	})
+	return
+}
+
+// RemovePrayerMadeOnRequestRoute removes a prayer made
+func RemovePrayerMadeOnRequestRoute(w http.ResponseWriter, r *http.Request) {
+	jwtUser, err := CheckForUser(r)
+	if err != nil || jwtUser.ID == 0 {
+		SendError(w, http.StatusForbidden, "permission_denied", "you don't have permission", nil)
+		return
+	}
+
+	requestID, requestIDErr := strconv.ParseInt(chi.URLParam(r, "requestID"), 10, 64)
+	if requestIDErr != nil {
+		SendError(w, http.StatusForbidden, "permission_denied", "you don't have permission", nil)
+		return
+	}
+
+	whenPrayed := r.URL.Query().Get("whenPrayed")
+	if whenPrayed == "" {
+		SendError(w, http.StatusBadRequest, "prayer_remove_error", "cannot remove a prayer for that date", map[string]string{
+			"whenPrayed": whenPrayed,
+		})
+		return
+	}
+
+	err = RemovePrayerMade(jwtUser.ID, requestID, whenPrayed)
+	if err != nil {
+		SendError(w, http.StatusBadRequest, "prayer_remove_error", "cannot remove a prayer for that date", map[string]string{
+			"whenPrayed": whenPrayed,
+		})
+		return
+	}
+
+	Send(w, http.StatusOK, map[string]bool{
+		"removed": true,
+	})
+	return
 }
