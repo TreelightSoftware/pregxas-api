@@ -26,7 +26,7 @@ The API is written in Go (as of version 2) and compiles to a static binary. It r
 
 ## Integration
 
-Each instance can function completely independently. You can use our (soon to be released) React application or you can build your own client. 
+Each instance can function completely independently. You can use our (soon to be released) React application or you can build your own client.
 
 *What's to stop me from running my own host platform?*
 
@@ -39,3 +39,23 @@ The easiest way to run the application is to use the Docker image (in the proces
 ### Vendor
 
 We commit our vendor directory. That way we con be confident in builds, regardless of network status.
+
+## Basic Concepts
+
+The `Site` is the single installation. If you are running this on your own, you would configure the site to be however you would like. When the server starts, it will check to see if the Site has been configured. If not, it will generate a passcode that will be used for setting up the Site and configuring it.
+
+Each Site can have several `Communities`. Communities can be free or paid subscriptions (a future plan will allow for toggling plan thresholds and hiding subscription options). Users can request to join communities and admins may invite users to communities.
+
+`Prayer Requests` are single requests for prayers. They are made by a user and can then be joined to specific communities. If the request is marked `private` it will NOT show up in the global feed.
+
+Users may add `prayers` to a request. These are only allowed once within a sliding time window. An email may optionally be sent with a list of Prayer Requests prayed for and updates.
+
+## TODO and New Features
+
+[ ] Finish migrating Prayer Requests and Prayers
+[ ] Implement emails and reports
+[ ] Implement subscriptions for communities
+[ ] Implement reporting a prayer
+[ ] Build an administrative dashboard
+[ ] Migrate web application
+[ ] Migrate mobile application

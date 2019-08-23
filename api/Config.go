@@ -244,8 +244,22 @@ func SetupApp() *chi.Mux {
 	r.Post("/communities/{communityID}/users/{userID}", ProcessCommunityMembershipRoute)  // this is for approving; TODO: needs OAS3 docs
 
 	// prayer requests
+	r.Get("/requests", GetGlobalPrayerRequestsRoute)
+	r.Post("/requests", CreatePrayerRequestRoute)
+	r.Get("/requests/{requestID}", GetPrayerRequestByIDRoute)
+	r.Patch("/requests/{requestID}", UpdatePrayerRequestRoute)
+	r.Delete("/requests/{requestID}", DeletePrayerRequestRoute)
+
+	r.Get("/users/{userID}/requests", GetUserPrayerRequestsRoute)
+
+	r.Get("/communities/{communityID}/requests", GetCommunityPrayerRequestsRoute)
+	r.Put("/communities/{communityID}/requests/{requestID}", AddPrayerRequestToCommunityRoute)
+	r.Delete("/communities/{communityID}/requests/{requestID}", RemovePrayerRequestFromCommunityRoute)
 
 	// prayers made
+	r.Get("/requests/{requestID}/prayers", nil)
+	r.Post("/requests/{requestID}/prayers", nil)
+	r.Delete("/requests/{requestID}/prayers", nil)
 
 	return r
 }
