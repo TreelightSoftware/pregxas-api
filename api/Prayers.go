@@ -296,6 +296,10 @@ func (u *PrayerRequest) processForDB() {
 	if u.Status == "" {
 		u.Status = "pending"
 	}
+
+	if u.Privacy == "" {
+		u.Privacy = "private"
+	}
 }
 
 // processForAPI ensures data consistency and creates the JWT

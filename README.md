@@ -53,9 +53,10 @@ Users may add `prayers` to a request. These are only allowed once within a slidi
 ## TODO and New Features
 
 [X] Finish migrating Prayer Requests and Prayers
-[ ] Implement emails and reports
+[ ] Implement emails and administrative reports
+[ ] Implement Prayer Lists
 [ ] Implement subscriptions for communities
-[ ] Implement reporting a prayer
+[X] Implement reporting a prayer
 [ ] Build an administrative dashboard
 [ ] Migrate web application
 [ ] Migrate mobile application

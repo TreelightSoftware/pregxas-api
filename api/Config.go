@@ -261,5 +261,15 @@ func SetupApp() *chi.Mux {
 	r.Post("/requests/{requestID}/prayers", AddPrayerToRequestRoute)          // TODO: needs OAS3 docs
 	r.Delete("/requests/{requestID}/prayers", RemovePrayerMadeOnRequestRoute) // the whenPrayed query param should be added; TODO: needs OAS3 docs
 
+	// reports
+	r.Post("/requests/{requestID}/reports", ReportRequestRoute)
+	r.Get("/requests/{requestID}/reports", GetReportsOnRequestRoute)
+
+	r.Get("/admin/reports", GetReportsOnPlatformRoute)
+	r.Get("/admin/reports/reasons", GetReportReasonsRoute)
+	r.Get("/admin/reports/statuses", GetReportStatusesRoute)
+	r.Get("/admin/reports/{reportID}", GetReportRoute)
+	r.Patch("/admin/reports/{reportID}", UpdateReportRoute)
+
 	return r
 }

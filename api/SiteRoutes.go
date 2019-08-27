@@ -91,12 +91,13 @@ func SetupSiteRoute(w http.ResponseWriter, r *http.Request) {
 
 	// now the user
 	user := User{
-		FirstName: input.FirstName,
-		LastName:  input.LastName,
-		Email:     input.Email,
-		Password:  input.Password,
-		Username:  input.Username,
-		Status:    UserStatusVerified,
+		FirstName:    input.FirstName,
+		LastName:     input.LastName,
+		Email:        input.Email,
+		Password:     input.Password,
+		Username:     input.Username,
+		Status:       UserStatusVerified,
+		PlatformRole: "admin",
 	}
 	err = CreateUser(&user)
 	if err != nil {

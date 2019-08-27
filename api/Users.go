@@ -15,17 +15,18 @@ import (
 
 // User is a user on the platform, including "users", "students", and "admins"
 type User struct {
-	ID          int64  `json:"id" db:"id"`
-	FirstName   string `json:"firstName" db:"firstName"`
-	LastName    string `json:"lastName" db:"lastName"`
-	Email       string `json:"email" db:"email"`
-	DateCreated string `json:"dateCreated" db:"dateCreated"`
-	Password    string `json:"password" db:"password"`
-	Status      string `json:"status" db:"status"`
-	Username    string `json:"username" db:"username"`
-	Updated     string `json:"updated" db:"updated"`
-	LastLogin   string `json:"lastLogin" db:"lastLogin"`
-	JWT         string `json:"jwt,omitempty" db:"-"`
+	ID           int64  `json:"id" db:"id"`
+	FirstName    string `json:"firstName" db:"firstName"`
+	LastName     string `json:"lastName" db:"lastName"`
+	Email        string `json:"email" db:"email"`
+	DateCreated  string `json:"dateCreated" db:"dateCreated"`
+	Password     string `json:"password" db:"password"`
+	Status       string `json:"status" db:"status"`
+	Username     string `json:"username" db:"username"`
+	Updated      string `json:"updated" db:"updated"`
+	LastLogin    string `json:"lastLogin" db:"lastLogin"`
+	JWT          string `json:"jwt,omitempty" db:"-"`
+	PlatformRole string `json:"platformRole" db:"platformRole"`
 	// CommunityStatus represents the user's status in a given community; used in queries with joins
 	CommunityStatus string `json:"communityStatus" db:"communityStatus"`
 }
@@ -41,8 +42,8 @@ const (
 func CreateUser(input *User) error {
 	input.processForDB()
 	defer input.processForAPI()
-	query := `INSERT INTO Users (firstName, lastName, email, dateCreated, password, status, username, updated, lastLogin) 
-	VALUES (:firstName, :lastName, :email, NOW(), :password, :status, :username, :updated, :lastLogin)
+	query := `INSERT INTO Users (firstName, lastName, email, dateCreated, password, status, username, updated, lastLogin, platformRole) 
+	VALUES (:firstName, :lastName, :email, NOW(), :password, :status, :username, :updated, :lastLogin, :platformRole)
 	`
 	res, err := Config.DbConn.NamedExec(query, input)
 	if err != nil {
@@ -77,6 +78,10 @@ func CreateTestUser(input *User) error {
 	}
 	if input.Status == "" {
 		input.Status = "verified"
+	}
+
+	if input.PlatformRole == "" {
+		input.PlatformRole = "member"
 	}
 
 	err := CreateUser(input)
@@ -220,6 +225,10 @@ func (u *User) processForDB() {
 			u.Password = hashed
 		}
 	}
+
+	if u.PlatformRole == "" {
+		u.PlatformRole = "member"
+	}
 }
 
 // processForAPI ensures data consistency and creates the JWT
@@ -260,11 +269,11 @@ func (u *User) clean() {
 
 // JWTUser is a user decrypted from a JWT token
 type JWTUser struct {
-	ID         int64  `json:"id"`
-	Username   string `json:"username"`
-	Email      string `json:"email"`
-	SystemRole string `json:"systemRole"`
-	Expires    string `json:"expires"`
+	ID           int64  `json:"id"`
+	Username     string `json:"username"`
+	Email        string `json:"email"`
+	Expires      string `json:"expires"`
+	PlatformRole string `json:"platformRole" `
 }
 
 type jwtClaims struct {
@@ -274,10 +283,14 @@ type jwtClaims struct {
 
 // createJwt creates a new jwt for a user
 func createJwt(payload *User) (string, error) {
+	if payload.PlatformRole == "" {
+		payload.PlatformRole = "member"
+	}
 	jwtu := JWTUser{
-		ID:      payload.ID,
-		Email:   payload.Email,
-		Expires: time.Now().AddDate(0, 0, 1).Format("2006-01-02T15:04:05Z"), // not currently used but eventually can be set via env
+		ID:           payload.ID,
+		Email:        payload.Email,
+		Expires:      time.Now().AddDate(0, 0, 1).Format("2006-01-02T15:04:05Z"), // not currently used but eventually can be set via env
+		PlatformRole: payload.PlatformRole,
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user": jwtu,
