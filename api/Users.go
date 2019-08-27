@@ -19,7 +19,7 @@ type User struct {
 	FirstName    string `json:"firstName" db:"firstName"`
 	LastName     string `json:"lastName" db:"lastName"`
 	Email        string `json:"email" db:"email"`
-	DateCreated  string `json:"dateCreated" db:"dateCreated"`
+	Created      string `json:"created" db:"created"`
 	Password     string `json:"password" db:"password"`
 	Status       string `json:"status" db:"status"`
 	Username     string `json:"username" db:"username"`
@@ -42,7 +42,7 @@ const (
 func CreateUser(input *User) error {
 	input.processForDB()
 	defer input.processForAPI()
-	query := `INSERT INTO Users (firstName, lastName, email, dateCreated, password, status, username, updated, lastLogin, platformRole) 
+	query := `INSERT INTO Users (firstName, lastName, email, created, password, status, username, updated, lastLogin, platformRole) 
 	VALUES (:firstName, :lastName, :email, NOW(), :password, :status, :username, :updated, :lastLogin, :platformRole)
 	`
 	res, err := Config.DbConn.NamedExec(query, input)
@@ -156,23 +156,23 @@ func LoginUser(email, plainPassword string) (found *User, err error) {
 // processForDB ensures data consistency
 func (u *User) processForDB() {
 
-	if u.DateCreated == "" {
-		u.DateCreated = "1970-01-01"
+	if u.Created == "" {
+		u.Created = "1970-01-01"
 	} else {
-		parsed, err := time.Parse("2006-01-02T15:04:05Z", u.DateCreated)
+		parsed, err := time.Parse("2006-01-02T15:04:05Z", u.Created)
 		if err != nil {
 			// perhaps it was already db time
-			parsed, err = time.Parse("2006-01-02 15:04:05", u.DateCreated)
+			parsed, err = time.Parse("2006-01-02 15:04:05", u.Created)
 			if err != nil {
 				// last try; no time?
-				parsed, err = time.Parse("2006-01-02", u.DateCreated)
+				parsed, err = time.Parse("2006-01-02", u.Created)
 				if err != nil {
 					// screw it
 					parsed, _ = time.Parse("2006-01-02", "1970-01-01")
 				}
 			}
 		}
-		u.DateCreated = parsed.Format("2006-01-02")
+		u.Created = parsed.Format("2006-01-02")
 	}
 
 	if u.Updated == "" {
@@ -237,10 +237,10 @@ func (u *User) processForAPI() {
 		return
 	}
 
-	if u.DateCreated == "1970-01-01 00:00:00" {
-		u.DateCreated = ""
+	if u.Created == "1970-01-01 00:00:00" {
+		u.Created = ""
 	} else {
-		u.DateCreated, _ = ParseTimeToDate(u.DateCreated)
+		u.Created, _ = ParseTimeToDate(u.Created)
 	}
 
 	if u.Updated == "1970-01-01 00:00:00" {

@@ -39,11 +39,11 @@ func TestTokensCron(t *testing.T) {
 	twentyMinutes := time.Now().Add(-20 * time.Minute).Format("2006-01-02 15:04:05")
 	twentyToken := fmt.Sprintf("test-20-%d", r)
 	// we will directly insert two
-	res, err := Config.DbConn.Exec("INSERT INTO UserTokens (token, createdOn, tokenType, userId) VALUES (?, ?, ?, ?)", fiveToken, fiveMinutes, "email", r)
+	res, err := Config.DbConn.Exec("INSERT INTO UserTokens (token, created, tokenType, userId) VALUES (?, ?, ?, ?)", fiveToken, fiveMinutes, "email", r)
 	assert.Nil(t, err)
 	token1ID, _ := res.LastInsertId()
 	// we will directly insert two
-	res, err = Config.DbConn.Exec("INSERT INTO UserTokens (token, createdOn, tokenType, userId) VALUES (?, ?, ?, ?)", twentyToken, twentyMinutes, "email", r)
+	res, err = Config.DbConn.Exec("INSERT INTO UserTokens (token, created, tokenType, userId) VALUES (?, ?, ?, ?)", twentyToken, twentyMinutes, "email", r)
 	assert.Nil(t, err)
 
 	err = DeleteTokensCreatedBeforeTime(tenMinutes)

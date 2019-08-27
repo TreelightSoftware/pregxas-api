@@ -39,11 +39,11 @@ func TestPrayerCRUD(t *testing.T) {
 	defer DeletePrayerRequest(request.ID)
 
 	request2 := PrayerRequest{
-		Title:       fmt.Sprintf("Test Prayer %d", randID),
-		Body:        "Test Prayer Request Body",
-		CreatedBy:   user1ID,
-		Privacy:     "public",
-		DateCreated: time.Now().Format("2006-01-02 15:04:05"),
+		Title:     fmt.Sprintf("Test Prayer %d", randID),
+		Body:      "Test Prayer Request Body",
+		CreatedBy: user1ID,
+		Privacy:   "public",
+		Created:   time.Now().Format("2006-01-02 15:04:05"),
 	}
 	err = CreatePrayerRequest(&request2)
 	require.Nil(t, err)
