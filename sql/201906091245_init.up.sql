@@ -9,6 +9,7 @@ CREATE TABLE `Users` (
   `username` varchar(32) NOT NULL,
   `updated` datetime NOT NULL DEFAULT '1969-01-01 00:00:00',
   `lastLogin` datetime NOT NULL DEFAULT '1969-01-01 00:00:00',
+  `platformRole` enum("member", "admin") DEFAULT "member",
   PRIMARY KEY (`id`),
   UNIQUE KEY `username` (`username`),
   UNIQUE KEY `email` (`email`)
@@ -109,4 +110,16 @@ CREATE TABLE `Site` (
   `secretKey` varchar(32) NOT NULL,
   `status` enum('pending_setup','active') NOT NULL DEFAULT 'pending_setup',
   `logoLocation` varchar(256) NOT NULL DEFAULT ''
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `Reports` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `requestId` int(11) NOT NULL,
+  `reporterId` int(11) NOT NULL,
+  `reason` enum('offensive','threat','copyright','other') DEFAULT 'other',
+  `reasonText` varchar(2048) NOT NULL DEFAULT '',
+  `reportedOn` datetime NOT NULL,
+  `lastUpdated` datetime NOT NULL,
+  `status` enum('open','closed_no_action','closed_deleted','follow_up') NOT NULL DEFAULT 'open',
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
