@@ -20,7 +20,7 @@ type Token struct {
 	ID        int64  `json:"id" db:"id"`
 	Token     string `json:"token" db:"token"`
 	TokenType string `json:"tokenType" db:"tokenType"`
-	CreatedOn string `json:"createdOn" db:"createdOn"`
+	Created   string `json:"created" db:"created"`
 	UserID    int64  `json:"userId" db:"userId"`
 }
 
@@ -33,7 +33,7 @@ func GenerateToken(userID int64, tokenType string) (token string, err error) {
 	hasher.Write([]byte(str))
 	hash := hex.EncodeToString(hasher.Sum(nil))
 	token = hash[0:8]
-	_, err = Config.DbConn.Exec("INSERT INTO UserTokens (token, createdOn, tokenType, userId) VALUES (?, NOW(), ?, ?)", token, tokenType, userID)
+	_, err = Config.DbConn.Exec("INSERT INTO UserTokens (token, created, tokenType, userId) VALUES (?, NOW(), ?, ?)", token, tokenType, userID)
 	return token, err
 }
 
@@ -59,7 +59,7 @@ func VerifyToken(token, tokenType string) (userID int64, valid bool, err error) 
 
 // DeleteTokensCreatedBeforeTime deletes tokens created before a specific time
 func DeleteTokensCreatedBeforeTime(time string) error {
-	_, err := Config.DbConn.Exec("DELETE FROM UserTokens WHERE createdOn < ?", time)
+	_, err := Config.DbConn.Exec("DELETE FROM UserTokens WHERE created < ?", time)
 	return err
 }
 

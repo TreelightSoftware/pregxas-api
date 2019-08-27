@@ -261,15 +261,24 @@ func SetupApp() *chi.Mux {
 	r.Post("/requests/{requestID}/prayers", AddPrayerToRequestRoute)          // TODO: needs OAS3 docs
 	r.Delete("/requests/{requestID}/prayers", RemovePrayerMadeOnRequestRoute) // the whenPrayed query param should be added; TODO: needs OAS3 docs
 
-	// reports
-	r.Post("/requests/{requestID}/reports", ReportRequestRoute)
-	r.Get("/requests/{requestID}/reports", GetReportsOnRequestRoute)
+	// lists
+	r.Get("/lists/requests", GetPrayerListsForUserRoute)                                     // TODO: needs OAS3 docs
+	r.Post("/lists/requests", CreatePrayerListRoute)                                         // TODO: needs OAS3 docs
+	r.Get("/lists/requests/{listID}", GetPrayerListByIDRoute)                                // TODO: needs OAS3 docs
+	r.Patch("/lists/requests/{listID}", UpdatePrayerListRoute)                               // TODO: needs OAS3 docs
+	r.Delete("/lists/requests/{listID}", DeletePrayerListByIDRoute)                          // TODO: needs OAS3 docs
+	r.Put("/lists/requests/{listID}/{requestID}", AddPrayerRequestToPrayerListRoute)         // TODO: needs OAS3 docs
+	r.Delete("/lists/requests/{listID}/{requestID}", RemovePrayerRequestFromPrayerListRoute) // TODO: needs OAS3 docs
 
-	r.Get("/admin/reports", GetReportsOnPlatformRoute)
-	r.Get("/admin/reports/reasons", GetReportReasonsRoute)
-	r.Get("/admin/reports/statuses", GetReportStatusesRoute)
-	r.Get("/admin/reports/{reportID}", GetReportRoute)
-	r.Patch("/admin/reports/{reportID}", UpdateReportRoute)
+	// reports
+	r.Post("/requests/{requestID}/reports", ReportRequestRoute)      // TODO: needs OAS3 docs
+	r.Get("/requests/{requestID}/reports", GetReportsOnRequestRoute) // TODO: needs OAS3 docs
+
+	r.Get("/admin/reports", GetReportsOnPlatformRoute)       // TODO: needs OAS3 docs
+	r.Get("/admin/reports/reasons", GetReportReasonsRoute)   // TODO: needs OAS3 docs
+	r.Get("/admin/reports/statuses", GetReportStatusesRoute) // TODO: needs OAS3 docs
+	r.Get("/admin/reports/{reportID}", GetReportRoute)       // TODO: needs OAS3 docs
+	r.Patch("/admin/reports/{reportID}", UpdateReportRoute)  // TODO: needs OAS3 docs
 
 	return r
 }

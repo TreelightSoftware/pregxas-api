@@ -9,8 +9,8 @@ type Report struct {
 	ReporterID   int64  `json:"reporterId" db:"reporterId"`
 	Reason       string `json:"reason" db:"reason"`
 	ReasonText   string `json:"reasonText" db:"reasonText"`
-	ReportedOn   string `json:"reportedOn" db:"reportedOn"`
-	LastUpdated  string `json:"lastUpdated" db:"lastUpdated"`
+	Reported     string `json:"reported" db:"reported"`
+	Updated      string `json:"updated" db:"updated"`
 	Status       string `json:"status" db:"status"`
 	RequestTitle string `json:"requestTitle" db:"requestTitle"`
 }
@@ -52,7 +52,7 @@ func GetReportReasons() []string {
 func CreateReport(input *Report) error {
 	input.processForDB()
 	defer input.processForAPI()
-	res, err := Config.DbConn.NamedExec(`INSERT INTO Reports (requestId, reporterId, reason, reasonText, reportedOn, lastUpdated, status) 
+	res, err := Config.DbConn.NamedExec(`INSERT INTO Reports (requestId, reporterId, reason, reasonText, reported, updated, status) 
 		VALUES (:requestId, :reporterId, :reason, :reasonText, NOW(), NOW(), :status)`, input)
 	if err != nil {
 		return err
@@ -65,7 +65,7 @@ func CreateReport(input *Report) error {
 func UpdateReport(input *Report) error {
 	input.processForDB()
 	defer input.processForAPI()
-	_, err := Config.DbConn.NamedExec(`UPDATE Reports SET status = :status, lastUpdated = NOW() WHERE id = :id`, input)
+	_, err := Config.DbConn.NamedExec(`UPDATE Reports SET status = :status, updated = NOW() WHERE id = :id`, input)
 	return err
 }
 
@@ -104,9 +104,8 @@ func GetReportsForPlatform(status string) ([]Report, error) {
 }
 
 func (u *Report) processForDB() {
-
-	if u.ReportedOn == "" {
-		u.ReportedOn = time.Now().Format("2006-01-02 15:04:05")
+	if u.Reported == "" {
+		u.Reported = time.Now().Format("2006-01-02 15:04:05")
 	}
 
 	if u.Status == "" {
@@ -115,12 +114,11 @@ func (u *Report) processForDB() {
 }
 
 func (u *Report) processForAPI() {
-
-	if u.ReportedOn == "" {
-		u.ReportedOn = time.Now().Format("2006-01-02T15:04:05Z")
+	if u.Reported == "" {
+		u.Reported = time.Now().Format("2006-01-02T15:04:05Z")
 	} else {
-		parsed, _ := time.Parse("2006-01-02 15:04:05", u.ReportedOn)
-		u.ReportedOn = parsed.Format("2006-01-02T15:04:05Z")
+		parsed, _ := time.Parse("2006-01-02 15:04:05", u.Reported)
+		u.Reported = parsed.Format("2006-01-02T15:04:05Z")
 	}
 
 	if u.Status == "" {

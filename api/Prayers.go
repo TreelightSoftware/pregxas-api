@@ -26,11 +26,12 @@ type PrayerRequest struct {
 	Body        string   `json:"body" db:"body"`
 	CreatedBy   int64    `json:"createdBy" db:"createdBy"`
 	Privacy     string   `json:"privacy" db:"privacy"`
-	DateCreated string   `json:"dateCreated" db:"dateCreated"`
+	Created     string   `json:"created" db:"created"`
 	Status      string   `json:"status" db:"status"`
 	Tags        []string `json:"tags" db:"-"`
 	PrayerCount int      `json:"prayerCount" db:"prayerCount"`
 	Username    string   `json:"username" db:"username"`
+	Added       string   `json:"added,omitempty" db:"added,omitempty"`
 }
 
 // Prayer represents a prayer made towards a request
@@ -50,7 +51,7 @@ type PrayerRequestCommunityLink struct {
 func CreatePrayerRequest(input *PrayerRequest) error {
 	input.processForDB()
 	defer input.processForAPI()
-	query := `INSERT INTO PrayerRequests (title, body, createdBy, privacy, status, dateCreated) 
+	query := `INSERT INTO PrayerRequests (title, body, createdBy, privacy, status, created) 
 		VALUES (:title, :body, :createdBy, :privacy, :status, NOW())`
 	res, err := Config.DbConn.NamedExec(query, &input)
 	if err != nil {
@@ -84,6 +85,10 @@ func DeletePrayerRequest(id int64) error {
 	if err != nil {
 		return err
 	}
+	_, err = Config.DbConn.Exec("DELETE FROM PrayerRequestPrayerListLinks WHERE prayerRequestId = ?", id)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -101,7 +106,7 @@ func GetPrayerRequest(id int64) (*PrayerRequest, error) {
 func GetGlobalPrayerRequests(count, offset int) []PrayerRequest {
 	requests := []PrayerRequest{}
 	Config.DbConn.Select(&requests, `SELECT pr.*, u.username, (SELECT COUNT(*) FROM Prayers p WHERE p.prayerRequestId = pr.id) AS prayerCount 
-		FROM PrayerRequests pr, Users u WHERE pr.privacy = 'public' AND pr.createdBy = u.id ORDER BY pr.dateCreated DESC LIMIT ?,?`, offset, count)
+		FROM PrayerRequests pr, Users u WHERE pr.privacy = 'public' AND pr.createdBy = u.id ORDER BY pr.created DESC LIMIT ?,?`, offset, count)
 	return requests
 }
 
@@ -112,11 +117,11 @@ func GetPrayerRequestsForCommunity(communityID int64, status string, count, offs
 	if status == "pending" || status == "answered" || status == "not_answered" || status == "unknown" {
 		Config.DbConn.Select(&requests, `SELECT pr.*, u.username, (SELECT COUNT(*) FROM Prayers p WHERE p.prayerRequestId = pr.id) AS prayerCount 
 			FROM PrayerRequests pr, Users u, PrayerRequestCommunityLinks prcl 
-			WHERE prcl.communityId = ? AND prcl.prayerRequestId = pr.id AND pr.createdBy = u.id AND pr.status = ? ORDER BY pr.dateCreated DESC LIMIT ?,?`, communityID, status, offset, count)
+			WHERE prcl.communityId = ? AND prcl.prayerRequestId = pr.id AND pr.createdBy = u.id AND pr.status = ? ORDER BY pr.created DESC LIMIT ?,?`, communityID, status, offset, count)
 	} else {
 		Config.DbConn.Select(&requests, `SELECT pr.*, u.username, (SELECT COUNT(*) FROM Prayers p WHERE p.prayerRequestId = pr.id) AS prayerCount 
 			FROM PrayerRequests pr, Users u, PrayerRequestCommunityLinks prcl 
-			WHERE prcl.communityId = ? AND prcl.prayerRequestId = pr.id AND pr.createdBy = u.id ORDER BY pr.dateCreated DESC LIMIT ?,?`, communityID, offset, count)
+			WHERE prcl.communityId = ? AND prcl.prayerRequestId = pr.id AND pr.createdBy = u.id ORDER BY pr.created DESC LIMIT ?,?`, communityID, offset, count)
 	}
 	return requests
 }
@@ -138,12 +143,12 @@ func GetUserPrayerRequests(userID int64, status string, startDate, endDate strin
 	if status == "pending" || status == "answered" || status == "not_answered" || status == "unknown" {
 		query := `SELECT pr.*, (SELECT COUNT(*) FROM Prayers p WHERE p.prayerRequestId = pr.id) AS prayerCount 
 		FROM PrayerRequests pr 
-		WHERE createdBy = ? AND status = ? AND dateCreated BETWEEN ? AND ? ORDER BY dateCreated DESC LIMIT ?,?`
+		WHERE createdBy = ? AND status = ? AND created BETWEEN ? AND ? ORDER BY created DESC LIMIT ?,?`
 		err = Config.DbConn.Select(&requests, query, userID, status, startDate, endDate, offset, count)
 	} else {
 		query := `SELECT pr.*, (SELECT COUNT(*) FROM Prayers p WHERE p.prayerRequestId = pr.id) AS prayerCount
 		FROM PrayerRequests pr 
-		WHERE createdBy = ? AND dateCreated BETWEEN ? AND ? ORDER BY dateCreated DESC LIMIT ?,?`
+		WHERE createdBy = ? AND created BETWEEN ? AND ? ORDER BY created DESC LIMIT ?,?`
 		err = Config.DbConn.Select(&requests, query, userID, startDate, endDate, offset, count)
 	}
 	for i := range requests {
@@ -230,7 +235,7 @@ func GetCountOfRequestsInCommunity(communityID int64, start, end string) (int64,
 	if end == "" {
 		end = "2100-01-01 00:00:00"
 	}
-	err := Config.DbConn.Get(&count, `SELECT COUNT(*) AS count FROM PrayerRequestCommunityLinks prcl, PrayerRequests pr WHERE prcl.communityId = ? AND prcl.prayerRequestId = pr.id AND pr.dateCreated BETWEEN ? AND ?`,
+	err := Config.DbConn.Get(&count, `SELECT COUNT(*) AS count FROM PrayerRequestCommunityLinks prcl, PrayerRequests pr WHERE prcl.communityId = ? AND prcl.prayerRequestId = pr.id AND pr.created BETWEEN ? AND ?`,
 		communityID, start, end)
 	return count.Count, err
 }
@@ -274,23 +279,23 @@ func IsUserAndRequestInSameGroup(userID, requestID int64) bool {
 // processForDB ensures data consistency
 func (u *PrayerRequest) processForDB() {
 
-	if u.DateCreated == "" {
-		u.DateCreated = "1970-01-01"
+	if u.Created == "" {
+		u.Created = "1970-01-01"
 	} else {
-		parsed, err := time.Parse("2006-01-02T15:04:05Z", u.DateCreated)
+		parsed, err := time.Parse("2006-01-02T15:04:05Z", u.Created)
 		if err != nil {
 			// perhaps it was already db time
-			parsed, err = time.Parse("2006-01-02 15:04:05", u.DateCreated)
+			parsed, err = time.Parse("2006-01-02 15:04:05", u.Created)
 			if err != nil {
 				// last try; no time?
-				parsed, err = time.Parse("2006-01-02", u.DateCreated)
+				parsed, err = time.Parse("2006-01-02", u.Created)
 				if err != nil {
 					// screw it
 					parsed, _ = time.Parse("2006-01-02", "1970-01-01")
 				}
 			}
 		}
-		u.DateCreated = parsed.Format("2006-01-02")
+		u.Created = parsed.Format("2006-01-02")
 	}
 
 	if u.Status == "" {
@@ -308,10 +313,16 @@ func (u *PrayerRequest) processForAPI() {
 		return
 	}
 
-	if u.DateCreated == "1970-01-01 00:00:00" {
-		u.DateCreated = ""
+	if u.Created == "1970-01-01 00:00:00" {
+		u.Created = ""
 	} else {
-		u.DateCreated, _ = ParseTimeToDate(u.DateCreated)
+		u.Created, _ = ParseTimeToDate(u.Created)
+	}
+
+	if u.Added == "1970-01-01 00:00:00" {
+		u.Added = ""
+	} else {
+		u.Added, _ = ParseTimeToDate(u.Added)
 	}
 
 	if u.Status == "" {

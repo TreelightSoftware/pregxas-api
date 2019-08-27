@@ -4,7 +4,7 @@ CREATE TABLE `Users` (
   `lastName` varchar(128) NOT NULL DEFAULT '',
   `email` varchar(256) NOT NULL DEFAULT '', -- can be blank for cross-posted, since we odn't want to leak emails
   `password` varchar(128) NOT NULL DEFAULT '', 
-  `dateCreated` datetime NOT NULL,
+  `created` datetime NOT NULL,
   `status` enum('pending','verified') DEFAULT 'pending',
   `username` varchar(32) NOT NULL,
   `updated` datetime NOT NULL DEFAULT '1969-01-01 00:00:00',
@@ -57,7 +57,7 @@ CREATE TABLE `UserTokens` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `token` varchar(64) DEFAULT NULL,
   `userId` int(11) NOT NULL,
-  `createdOn` datetime NOT NULL,
+  `created` datetime NOT NULL,
   `tokenType` enum('email','password_reset') NOT NULL DEFAULT 'email',
   PRIMARY KEY (`id`),
   KEY `userId` (`userId`)
@@ -69,13 +69,13 @@ CREATE TABLE `PrayerRequests` (
   `body` text,
   `createdBy` int(11) NOT NULL,
   `privacy` enum('public','private') DEFAULT 'private',
-  `dateCreated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `status` enum('pending','answered','not_answered','unknown') DEFAULT 'pending',
   PRIMARY KEY (`id`),
   KEY `createdBy` (`createdBy`),
   KEY `privacy` (`privacy`),
-  KEY `dateCreated` (`dateCreated`),
-  KEY `createdBy_dateCreated` (`createdBy`,`dateCreated`)
+  KEY `created` (`created`),
+  KEY `createdBy_created` (`createdBy`,`created`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `PrayerRequestCommunityLinks` (
@@ -118,8 +118,24 @@ CREATE TABLE `Reports` (
   `reporterId` int(11) NOT NULL,
   `reason` enum('offensive','threat','copyright','other') DEFAULT 'other',
   `reasonText` varchar(2048) NOT NULL DEFAULT '',
-  `reportedOn` datetime NOT NULL,
-  `lastUpdated` datetime NOT NULL,
+  `reported` datetime NOT NULL,
+  `updated` datetime NOT NULL,
   `status` enum('open','closed_no_action','closed_deleted','follow_up') NOT NULL DEFAULT 'open',
   PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `PrayerLists` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `userId` int(11) NOT NULL,
+  `title` varchar(256) NOT NULL,
+  `updateFrequency` enum('daily','weekly','never') NOT NULL DEFAULT 'never',
+  `created` datetime NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `PrayerRequestPrayerListLinks` (
+  `prayerRequestId` int(11) NOT NULL,
+  `listId` int(11) NOT NULL,
+  `added` datetime NOT NULL,
+  UNIQUE KEY `request_list` (`prayerRequestId`,`listId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
