@@ -1,0 +1,387 @@
+openapi: 3.0.0
+info:
+  version: 0.2.0
+  title: Pregxas API
+  description: >
+    The API for the Pregxas platform
+
+
+    *Notice a bug? Something wrong? Want to provide feedback? Send us an email at support@treelightsoftware.com!*
+
+
+    *WARNING: Usage of non-documented APIs is not supported and may change without warning or notification!*
+  contact:
+    name: Treelight Software
+    email: support@treelightsoftware.com
+    url: https://www.treelightsoftware.com
+servers:
+  - url: https://api.pregxas.com
+security:
+  - ApiKeyAuth: []
+tags:
+  - name: User
+    description: Users are individual users on an individual platform. The email address is
+      the primary identifying attribute.
+paths:
+  /admin/site:
+    get:
+      description: Get the site status. Note that you must provide the `X-API-SECRET`
+        header retrieved from the console on site setup.
+      operationId: Site - Get
+      tags:
+        - Site
+        - Admin
+      responses:
+        "200":
+          description: The site status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      description:
+                        type: string
+                      secretKey:
+                        type: string
+                      status:
+                        type: string
+                        enum:
+                          - pending_setup
+                          - active
+                      logoLocation:
+                        type: string
+        "401":
+          description: Not authorized, perhaps due to a missing JWT or API key
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: The nature of the error
+        "403":
+          description: Not allowed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: The nature of the error
+    post:
+      description: Setup a new site. Note that you must provide the `X-API-SECRET` header
+        retrieved from the console on site setup.
+      operationId: Site - Setup
+      tags:
+        - Site
+        - Admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                firstName:
+                  type: string
+                  description: The first name of the site owner
+                lastName:
+                  type: string
+                  description: The last name of the site owner
+                email:
+                  type: string
+                  description: The email address of the site owner
+                username:
+                  type: string
+                  description: The username of the site owner
+                password:
+                  type: string
+                  description: The password of the site owner
+      responses:
+        "200":
+          description: The site has been setup
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      active:
+                        type: boolean
+        "400":
+          description: Invalid request, typically due to missing or malformed parameters or
+            body
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: The nature of the error
+        "401":
+          $ref: "#/paths/~1admin~1site/get/responses/401"
+        "403":
+          $ref: "#/paths/~1admin~1site/get/responses/403"
+        "409":
+          description: Conflict or already exists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: The nature of the error
+  /me:
+    patch:
+      description: Update a user profile
+      operationId: User - Profile Update
+      tags:
+        - User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                username:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        "200":
+          description: The user successfully updated their profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: number
+                      firstName:
+                        type: string
+                      lastName:
+                        type: string
+                      email:
+                        type: string
+                        format: email
+                      created:
+                        type: string
+                      username:
+                        type: string
+                        format: date-time
+                      lastLogin:
+                        type: string
+                        format: date-time
+                      updated:
+                        type: string
+                        format: date-time
+                      password:
+                        type: string
+                      status:
+                        type: string
+                        enum:
+                          - pending
+                          - verified
+                      platformRole:
+                        type: string
+                        enum:
+                          - member
+                          - admin
+                      jwt:
+                        type: string
+        "400":
+          $ref: "#/paths/~1admin~1site/post/responses/400"
+        "401":
+          $ref: "#/paths/~1admin~1site/get/responses/401"
+        "403":
+          $ref: "#/paths/~1admin~1site/get/responses/403"
+    get:
+      description: Get the current user's profile
+      operationId: User - Profile Get
+      tags:
+        - User
+      responses:
+        "200":
+          description: The user profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/paths/~1me/patch/responses/200/content/application~1js\
+                      on/schema/properties/data"
+        "401":
+          $ref: "#/paths/~1admin~1site/get/responses/401"
+        "403":
+          $ref: "#/paths/~1admin~1site/get/responses/403"
+  /users/login:
+    post:
+      description: Login a user with an email address and password
+      operationId: Login
+      tags:
+        - User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        "200":
+          description: The user successfully logged in
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/paths/~1me/patch/responses/200/content/application~1js\
+                      on/schema/properties/data"
+        "400":
+          $ref: "#/paths/~1admin~1site/post/responses/400"
+        "401":
+          $ref: "#/paths/~1admin~1site/get/responses/401"
+        "403":
+          $ref: "#/paths/~1admin~1site/get/responses/403"
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: jwt
+  parameters:
+    email:
+      name: email
+      in: path
+      required: true
+      description: The email address
+      schema:
+        type: string
+    userId:
+      name: userId
+      in: path
+      required: true
+      description: The user's database id
+      schema:
+        type: integer
+    start:
+      name: start
+      in: query
+      description: The UTC timestamp (YY-MM-DDTHH:mm:SSZ) of when to start the filtering
+      schema:
+        type: string
+        format: datetime
+    end:
+      name: end
+      in: query
+      description: The UTC timestamp (YY-MM-DDTHH:mm:SSZ) of when to end the filtering
+      schema:
+        type: string
+        format: datetime
+    count:
+      name: count
+      in: query
+      description: The maximum number of elements to return
+      schema:
+        type: integer
+    offset:
+      name: offset
+      in: query
+      description: The offset to begin the filtering by
+      schema:
+        type: integer
+    groupBy:
+      name: groupBy
+      in: query
+      description: What to group the elements by
+      schema:
+        type: string
+  responses:
+    400Response:
+      description: Invalid request, typically due to missing or malformed parameters or body
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                description: The nature of the error
+    401Response:
+      description: Not authorized, perhaps due to a missing JWT or API key
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                description: The nature of the error
+    403Response:
+      description: Not allowed
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                description: The nature of the error
+    404Response:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                description: The nature of the error
+    409Response:
+      description: Conflict or already exists
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                description: The nature of the error

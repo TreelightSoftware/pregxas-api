@@ -36,3 +36,64 @@ UserLoginPath:
         $ref: "index.yaml#/components/responses/401Response"
       '403':
         $ref: "index.yaml#/components/responses/403Response"
+
+UserProfilePath:
+  patch:
+    description: Update a user profile
+    operationId: User - Profile Update
+    tags:
+      - User
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              firstName:
+                type: string
+              lastName:
+                type: string
+              username:
+                type: string
+              email:
+                type: string
+                format: email
+              password:
+                type: string
+                format: password
+    responses:
+      '200':
+        description: The user successfully updated their profile
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: 
+                data:
+                  $ref: 'userModel.yaml#/User'
+      '400':
+        $ref: "index.yaml#/components/responses/400Response"
+      '401':
+        $ref: "index.yaml#/components/responses/401Response"
+      '403':
+        $ref: "index.yaml#/components/responses/403Response"
+  get:
+    description: Get the current user's profile
+    operationId: User - Profile Get
+    tags:
+      - User
+    responses:
+      '200':
+        description: The user profile
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  $ref: "userModel.yaml#/User"
+      '401':
+        $ref: "index.yaml#/components/responses/401Response"
+      '403':
+        $ref: "index.yaml#/components/responses/403Response"

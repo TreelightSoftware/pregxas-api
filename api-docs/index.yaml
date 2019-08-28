@@ -1,9 +1,9 @@
 openapi: 3.0.0
 info:
-  version: 1.0.0
+  version: 0.2.0
   title: Pregxas API
   description: |
-    The API for the Pregxas API
+    The API for the Pregxas platform
 
     *Notice a bug? Something wrong? Want to provide feedback? Send us an email at support@treelightsoftware.com!*
 
@@ -24,8 +24,12 @@ tags:
   $ref: "tags.yaml#/Tags"
 
 paths:
- 
+  ## SITE ##
+  /admin/site:
+    $ref: "sitePaths.yaml#/SiteInfoPath"
   ## USERS ##
+  /me:
+    $ref: userPaths.yaml#/UserProfilePath
   /users/login:
     $ref: "userPaths.yaml#/UserLoginPath"
 

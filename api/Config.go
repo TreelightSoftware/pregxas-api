@@ -133,16 +133,28 @@ func ConfigSetup() *ConfigStruct {
 	// if the database is empty, we need to set it up
 	_, err = c.DbConn.Exec("SELECT * FROM Sites WHERE status = 'active' LIMIT 1")
 	if err != nil && (c.Environment == "production" || c.Environment == "develop") {
-		c.DbConn.Exec(fmt.Sprintf("CREATE DATABASE %s", c.dbName))
-		err = populateDB(c.dbUser, c.dbPassword, c.dbHost, c.dbPort, c.dbName)
-		if err != nil {
-			fmt.Printf("\n%+v\n", err)
-			panic("no database schema!")
+		// currently, migrate is not working correctly. This needs to be looked at
+		// c.DbConn.Exec(fmt.Sprintf("CREATE DATABASE %s", c.dbName))
+		// err = populateDB(c.dbUser, c.dbPassword, c.dbHost, c.dbPort, c.dbName)
+		// if err != nil {
+		// 	fmt.Printf("\n%+v\n", err)
+		// 	panic("no database schema!")
+		// }
+	}
+	// now, try to get the site so we can figure out if setup is needed
+	err = LoadSite()
+	if err != nil || Site.Status == "pending_setup" {
+		// if the site isn't ready to go and the secret key is present, redisplay what is in the db
+		key := Site.SecretKey
+		if Site.SecretKey == "" {
+			// now we need to generate a secret key for logging in
+			key = GenerateSiteKey()
+			err = SetupInitialSite(key)
+			if err != nil {
+				panic(err)
+			}
 		}
-		// now we need to generate a secret key for logging in
-		key := GenerateSiteKey()
-		fmt.Printf(`\n---------------------------------------------\n-- Site Key: %s --\n---------------------------------------------\n`, key)
-		SetupInitialSite(key)
+		fmt.Printf("\n---------------------------------------------\n-- Site Key: %s --\n---------------------------------------------\n", key)
 		fmt.Println("Using the client of your choice, you must now setup your site. If you were not expecting this message, please ensure you setup your database correctly")
 	}
 	return Config
@@ -214,13 +226,13 @@ func SetupApp() *chi.Mux {
 	}
 
 	// site routes
-	r.Get("/admin/site", GetSiteInfoRoute) // TODO: needs OAS3 docs
-	r.Post("/admin/site", SetupSiteRoute)  // TODO: needs OAS3 docs
+	r.Get("/admin/site", GetSiteInfoRoute)
+	r.Post("/admin/site", SetupSiteRoute)
 
 	// user routes
-	r.Get("/me", GetMyProfileRoute)                               // TODO: needs OAS3 docs
-	r.Patch("/me", UpdateMyProfileRoute)                          // TODO: needs OAS3 docs
-	r.Post("/users/login", LoginUserRoute)                        // TODO: needs OAS3 docs
+	r.Get("/me", GetMyProfileRoute)
+	r.Patch("/me", UpdateMyProfileRoute)
+	r.Post("/users/login", LoginUserRoute)
 	r.Post("/users/signup", SignupUserRoute)                      // TODO: needs OAS3 docs
 	r.Post("/users/signup/verify", VerifyEmailAndTokenRoute)      // TODO: needs OAS3 docs
 	r.Post("/users/login/reset", ResetPasswordStartRoute)         // TODO: needs OAS3 docs

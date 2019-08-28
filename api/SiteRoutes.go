@@ -24,20 +24,28 @@ func (data *SiteSetup) Bind(r *http.Request) error {
 
 // GetSiteInfoRoute gets the site info
 func GetSiteInfoRoute(w http.ResponseWriter, r *http.Request) {
-	// first, check for the key
+	// first, if the site is setup, return the basic information
+	if Site.Status == "active" {
+		key := Site.SecretKey
+		Site.SecretKey = ""
+		Send(w, http.StatusOK, Site)
+		Site.SecretKey = key
+		return
+	}
+	// now, check for the key
 	foundKey := r.Header.Get("X-API-SECRET")
 	if foundKey == "" {
-		SendError(w, 400, "site_secret_key_missing", "secret key for site must be sent in X-API-SECRET header", nil)
+		SendError(w, http.StatusBadRequest, "site_secret_key_missing", "secret key for site must be sent in X-API-SECRET header", nil)
 		return
 	}
 	if foundKey != Site.SecretKey {
-		SendError(w, 403, "site_secret_key_incorrect", "secret key incorrect", nil)
+		SendError(w, http.StatusForbidden, "site_secret_key_incorrect", "secret key incorrect", nil)
 		return
 	}
 
 	key := Site.SecretKey
 	Site.SecretKey = ""
-	Send(w, 200, Site)
+	Send(w, http.StatusOK, Site)
 	Site.SecretKey = key
 	return
 }
@@ -47,11 +55,15 @@ func SetupSiteRoute(w http.ResponseWriter, r *http.Request) {
 	// first, check for the key
 	foundKey := r.Header.Get("X-API-SECRET")
 	if foundKey == "" {
-		SendError(w, 400, "site_secret_key_missing", "secret key for site must be sent in X-API-SECRET header", nil)
+		SendError(w, http.StatusBadRequest, "site_secret_key_missing", "secret key for site must be sent in X-API-SECRET header", nil)
 		return
 	}
 	if foundKey != Site.SecretKey {
-		SendError(w, 403, "site_secret_key_incorrect", "secret key incorrect", nil)
+		SendError(w, http.StatusForbidden, "site_secret_key_incorrect", "secret key incorrect", nil)
+		return
+	}
+	if Site.Status == "active" {
+		SendError(w, http.StatusConflict, "site_active", "this site is already active and cannot be setup again", nil)
 		return
 	}
 
@@ -71,7 +83,7 @@ func SetupSiteRoute(w http.ResponseWriter, r *http.Request) {
 		input.Email == "" ||
 		input.Username == "" ||
 		input.Password == "" {
-		SendError(w, 400, "site_setup_invalid", "name, description, firstName, lastName, email, username, and password are all required", nil)
+		SendError(w, http.StatusBadRequest, "site_setup_invalid", "name, description, firstName, lastName, email, username, and password are all required", nil)
 		return
 	}
 	input.Password, _ = encrypt(input.Password)
@@ -85,7 +97,7 @@ func SetupSiteRoute(w http.ResponseWriter, r *http.Request) {
 	}
 	err := UpdateSiteSettings(&site)
 	if err != nil {
-		SendError(w, 400, "site_setup_invalid", "could not save site settings", err)
+		SendError(w, http.StatusBadRequest, "site_setup_invalid", "could not save site settings", err)
 		return
 	}
 
@@ -101,10 +113,10 @@ func SetupSiteRoute(w http.ResponseWriter, r *http.Request) {
 	}
 	err = CreateUser(&user)
 	if err != nil {
-		SendError(w, 400, "site_setup_invalid", "could not create thta user", err)
+		SendError(w, http.StatusBadRequest, "site_setup_invalid", "could not create thta user", err)
 		return
 	}
-	Send(w, 200, map[string]bool{
+	Send(w, http.StatusOK, map[string]bool{
 		"active": true,
 	})
 	return

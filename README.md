@@ -50,13 +50,28 @@ Each Site can have several `Communities`. Communities can be free or paid subscr
 
 Users may add `prayers` to a request. These are only allowed once within a sliding time window. An email may optionally be sent with a list of Prayer Requests prayed for and updates.
 
+## I'm New, How Can I Help
+
+There are many ways to help, and we are a very open group that has no problem helping along newer contributors, whether new to the industry or just new to Go!
+
+If you don't have any programming background, that's fine! We could always use help with our documentation (both comments and Open API Standard 3 docs) or with new tutorials or guides. If you create an external resource, such as a tutorial or guide, we would love to link to it from here!
+
+If you are experience in Quality Assurance, we would love any feedback on bugs, typos, or things that could be improved. You can open a ticket or simply email us. Whatever works for you!
+
+If you are a programmer with Go experience, we would love to have your help with this project. If you aren't sure where we need the most help, and the To Do list below seems daunting, you can always help with tests, clarifications, and QA.
+
+Speak multiple languages? Although the API is mostly neutral in that regard, our web and mobile apps could always use a translation. Since none exist at this point, email us and we can talk about the best path forward here!
+
 ## TODO and New Features
+
+An `X` represents a recently released feature that could use some testing but is, in theory, completed. A `-` represents something that is in progress but will likely span many different pull requests (such as adding OAS3 docs for every endpoint).
 
 [X] Finish migrating Prayer Requests and Prayers
 [ ] Implement emails and administrative reports
-[ ] Implement Prayer Lists
+[X] Implement Prayer Lists
 [ ] Implement subscriptions for communities
 [X] Implement reporting a prayer
+[-] Create OpenAPI 3 compliant docs for all end points (see `api-docs` folder and the `Config.go` file for `TODO` stubs on which endpoints need it)
 [ ] Build an administrative dashboard
 [ ] Migrate web application
 [ ] Migrate mobile application
