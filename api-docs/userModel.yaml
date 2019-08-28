@@ -3,16 +3,16 @@ User:
   properties:
     id:
       type: number
-    email:
-      type: string
-      format: email
     firstName:
       type: string
     lastName:
       type: string
-    username:
+    email:
       type: string
-    dateCreated:
+      format: email
+    created:
+      type: string
+    username:
       type: string
       format: date-time
     lastLogin:
@@ -25,5 +25,9 @@ User:
       type: string
     status:
       type: string
+      enum: [pending, verified]
+    platformRole:
+      type: string
+      enum: [member, admin]
     jwt:
       type: string

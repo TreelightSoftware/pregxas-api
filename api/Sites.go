@@ -4,22 +4,35 @@ package api
 type SiteStruct struct {
 	Name         string `json:"name" db:"name"`
 	Description  string `json:"description" db:"description"`
-	SecretKey    string `json:"secretKey" db:"secretKey"`
+	SecretKey    string `json:"secretKey,omitempty" db:"secretKey"`
 	Status       string `json:"status" db:"status"`
 	LogoLocation string `json:"logoLocation" db:"logoLocation"`
+	Loaded       bool   `json:"-"`
 }
 
 // Site is the global Site variable with global configuration options from the DB
 var Site = SiteStruct{}
 
+// LoadSite lodas the site from the DB
+func LoadSite() error {
+	// if the site has already loaded, just return nil
+	if Site.Loaded {
+		return nil
+	}
+	err := Config.DbConn.Get(&Site, "SELECT * FROM Site LIMIT 1")
+	return err
+}
+
 // SetupInitialSite sets up the initial site for a first time installation
 func SetupInitialSite(secretKey string) error {
+	Config.DbConn.Exec("DELETE FROM Site")
 	Site.Name = "Pregxas"
 	Site.Description = "The prayerful community"
 	Site.SecretKey = secretKey
 	Site.Status = "pending_setup"
 	Site.LogoLocation = ""
-	return UpdateSiteSettings(&Site)
+	_, err := Config.DbConn.NamedExec("INSERT INTO Site (name, description, secretKey, status, logoLocation) VALUES (:name, :description, :secretKey, :status, :logoLocation)", &Site)
+	return err
 }
 
 // DeleteSiteForTest deletes a site's settings, should only be used in testing

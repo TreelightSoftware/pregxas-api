@@ -20,7 +20,7 @@ type User struct {
 	LastName     string `json:"lastName" db:"lastName"`
 	Email        string `json:"email" db:"email"`
 	Created      string `json:"created" db:"created"`
-	Password     string `json:"password" db:"password"`
+	Password     string `json:"password,omitempty" db:"password"`
 	Status       string `json:"status" db:"status"`
 	Username     string `json:"username" db:"username"`
 	Updated      string `json:"updated" db:"updated"`
@@ -28,7 +28,7 @@ type User struct {
 	JWT          string `json:"jwt,omitempty" db:"-"`
 	PlatformRole string `json:"platformRole" db:"platformRole"`
 	// CommunityStatus represents the user's status in a given community; used in queries with joins
-	CommunityStatus string `json:"communityStatus" db:"communityStatus"`
+	CommunityStatus string `json:"communityStatus,omitempty" db:"communityStatus"`
 }
 
 const (
@@ -43,7 +43,7 @@ func CreateUser(input *User) error {
 	input.processForDB()
 	defer input.processForAPI()
 	query := `INSERT INTO Users (firstName, lastName, email, created, password, status, username, updated, lastLogin, platformRole) 
-	VALUES (:firstName, :lastName, :email, NOW(), :password, :status, :username, :updated, :lastLogin, :platformRole)
+	VALUES (:firstName, :lastName, :email, NOW(), :password, :status, :username, NOW(), :lastLogin, :platformRole)
 	`
 	res, err := Config.DbConn.NamedExec(query, input)
 	if err != nil {
@@ -148,7 +148,9 @@ func LoginUser(email, plainPassword string) (found *User, err error) {
 		err = errors.New("incorrect password")
 		return
 	}
-	//we are good, jwt it and move on
+	//we are good, jwt it, update last logged in and move on
+	Config.DbConn.Exec("UPDATE Users SET lastLogin = NOW() where id = ?", found.ID)
+	found.LastLogin = time.Now().Format("2006-01-02 15:04:05")
 	found.processForAPI()
 	return
 }
