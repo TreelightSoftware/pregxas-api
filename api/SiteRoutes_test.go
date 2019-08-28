@@ -3,6 +3,8 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"math/rand"
 	"net/http"
 	"testing"
 
@@ -14,12 +16,11 @@ func TestSiteSetupRoute(t *testing.T) {
 	ConfigSetup()
 	b := new(bytes.Buffer)
 	enc := json.NewEncoder(b)
+	randID := rand.Int63n(99999999)
 	key := GenerateSiteKey()
 	SetupInitialSite(key)
 
 	enc.Encode(map[string]string{})
-	code, _, _ := TestAPICall(http.MethodGet, "/admin/site", b, GetSiteInfoRoute, "", "")
-	assert.Equal(t, http.StatusBadRequest, code, "empty data")
 	code, res, _ := TestAPICall(http.MethodGet, "/admin/site", b, GetSiteInfoRoute, "", key)
 	assert.Equal(t, http.StatusOK, code)
 	_, body, _ := UnmarshalTestMap(res)
@@ -35,8 +36,8 @@ func TestSiteSetupRoute(t *testing.T) {
 		"description": "My site description",
 		"firstName":   "Kevin",
 		"lastName":    "Eaton",
-		"email":       "kevin@treelightsoftware.com",
-		"username":    "kevineaton",
+		"email":       fmt.Sprintf("r-%d@treelightsoftware.com", randID),
+		"username":    fmt.Sprintf("rand-%d", randID),
 		"password":    "super_secret!!",
 	}
 	b.Reset()

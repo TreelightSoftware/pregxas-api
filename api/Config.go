@@ -154,8 +154,8 @@ func ConfigSetup() *ConfigStruct {
 				panic(err)
 			}
 		}
-		fmt.Printf("\n---------------------------------------------\n-- Site Key: %s --\n---------------------------------------------\n", key)
-		fmt.Println("Using the client of your choice, you must now setup your site. If you were not expecting this message, please ensure you setup your database correctly")
+		fmt.Printf("\n\t--------------------------\n\t--------------------------\n\t-- Site Key: %s --\n\t--------------------------\n\t--------------------------\n\n", key)
+		fmt.Printf("Using the client of your choice, you must now setup your site. If you were not expecting this message, please ensure you setup your database correctly\n\n")
 	}
 	return Config
 }

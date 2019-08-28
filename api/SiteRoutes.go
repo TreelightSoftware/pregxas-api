@@ -24,25 +24,7 @@ func (data *SiteSetup) Bind(r *http.Request) error {
 
 // GetSiteInfoRoute gets the site info
 func GetSiteInfoRoute(w http.ResponseWriter, r *http.Request) {
-	// first, if the site is setup, return the basic information
-	if Site.Status == "active" {
-		key := Site.SecretKey
-		Site.SecretKey = ""
-		Send(w, http.StatusOK, Site)
-		Site.SecretKey = key
-		return
-	}
-	// now, check for the key
-	foundKey := r.Header.Get("X-API-SECRET")
-	if foundKey == "" {
-		SendError(w, http.StatusBadRequest, "site_secret_key_missing", "secret key for site must be sent in X-API-SECRET header", nil)
-		return
-	}
-	if foundKey != Site.SecretKey {
-		SendError(w, http.StatusForbidden, "site_secret_key_incorrect", "secret key incorrect", nil)
-		return
-	}
-
+	// the site info should always return the current state without requiring the key
 	key := Site.SecretKey
 	Site.SecretKey = ""
 	Send(w, http.StatusOK, Site)
@@ -113,7 +95,7 @@ func SetupSiteRoute(w http.ResponseWriter, r *http.Request) {
 	}
 	err = CreateUser(&user)
 	if err != nil {
-		SendError(w, http.StatusBadRequest, "site_setup_invalid", "could not create thta user", err)
+		SendError(w, http.StatusBadRequest, "site_setup_invalid", "could not create that user", err)
 		return
 	}
 	Send(w, http.StatusOK, map[string]bool{

@@ -56,7 +56,7 @@ There are many ways to help, and we are a very open group that has no problem he
 
 If you don't have any programming background, that's fine! We could always use help with our documentation (both comments and Open API Standard 3 docs) or with new tutorials or guides. If you create an external resource, such as a tutorial or guide, we would love to link to it from here!
 
-If you are experience in Quality Assurance, we would love any feedback on bugs, typos, or things that could be improved. You can open a ticket or simply email us. Whatever works for you!
+If you are experienced in Quality Assurance, we would love any feedback on bugs, typos, or things that could be improved. You can open a ticket or simply email us. Whatever works for you!
 
 If you are a programmer with Go experience, we would love to have your help with this project. If you aren't sure where we need the most help, and the To Do list below seems daunting, you can always help with tests, clarifications, and QA.
 

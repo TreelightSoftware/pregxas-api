@@ -42,8 +42,8 @@ const (
 func CreateUser(input *User) error {
 	input.processForDB()
 	defer input.processForAPI()
-	query := `INSERT INTO Users (firstName, lastName, email, created, password, status, username, updated, lastLogin, platformRole, updated) 
-	VALUES (:firstName, :lastName, :email, NOW(), :password, :status, :username, :updated, :lastLogin, :platformRole, NOW())
+	query := `INSERT INTO Users (firstName, lastName, email, created, password, status, username, updated, lastLogin, platformRole) 
+	VALUES (:firstName, :lastName, :email, NOW(), :password, :status, :username, NOW(), :lastLogin, :platformRole)
 	`
 	res, err := Config.DbConn.NamedExec(query, input)
 	if err != nil {

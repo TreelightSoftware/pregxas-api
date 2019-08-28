@@ -82,7 +82,7 @@ func GenerateSiteKey() string {
 	hasher := md5.New()
 	hasher.Write([]byte(str))
 	hash := hex.EncodeToString(hasher.Sum(nil))
-	token := "_" + hash[0:28]
+	token := hash[0:10]
 	return token
 }
 
