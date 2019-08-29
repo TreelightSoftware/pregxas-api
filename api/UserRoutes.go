@@ -280,7 +280,9 @@ func ResetPasswordStartRoute(w http.ResponseWriter, r *http.Request) {
 
 	emailBody := GenerateEmail(0, emailContent)
 	SendEmail(user.Email, "Reset Your Password", emailBody)
-	Send(w, http.StatusOK, map[string]string{})
+	Send(w, http.StatusOK, map[string]bool{
+		"resetStarted": true,
+	})
 	return
 }
 
@@ -319,7 +321,9 @@ func ResetPasswordVerifyRoute(w http.ResponseWriter, r *http.Request) {
 
 	UpdateUser(found)
 
-	Send(w, http.StatusOK, map[string]string{})
+	Send(w, http.StatusOK, map[string]bool{
+		"passwordReset": true,
+	})
 	return
 
 }

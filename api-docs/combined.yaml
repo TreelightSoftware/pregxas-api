@@ -26,7 +26,8 @@ paths:
   /admin/site:
     get:
       description: Get the site status. Note that you must provide the `X-API-SECRET`
-        header retrieved from the console on site setup.
+        header retrieved from the console on site setup if the site has not been
+        setup yet.
       operationId: Site - Get
       tags:
         - Site
@@ -65,6 +66,12 @@ paths:
                   message:
                     type: string
                     description: The nature of the error
+                  code:
+                    type: string
+                    description: A system generated code for the error type
+                  data:
+                    type: object
+                    description: Optional object with additional data
         "403":
           description: Not allowed
           content:
@@ -75,6 +82,12 @@ paths:
                   message:
                     type: string
                     description: The nature of the error
+                  code:
+                    type: string
+                    description: A system generated code for the error type
+                  data:
+                    type: object
+                    description: Optional object with additional data
     post:
       description: Setup a new site. Note that you must provide the `X-API-SECRET` header
         retrieved from the console on site setup.
@@ -146,6 +159,12 @@ paths:
                   message:
                     type: string
                     description: The nature of the error
+                  code:
+                    type: string
+                    description: A system generated code for the error type
+                  data:
+                    type: object
+                    description: Optional object with additional data
   /me:
     patch:
       description: Update a user profile
@@ -281,6 +300,72 @@ paths:
           $ref: "#/paths/~1admin~1site/get/responses/401"
         "403":
           $ref: "#/paths/~1admin~1site/get/responses/403"
+  /users/reset:
+    post:
+      description: Begin the password reset process
+      operationId: User - Password Reset
+      tags:
+        - User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        "200":
+          description: The password reset process has started for the email provided
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      resetStarted:
+                        type: boolean
+        "400":
+          $ref: "#/paths/~1admin~1site/post/responses/400"
+  /users/reset/verify:
+    post:
+      description: Reset the password using a token provided by the system
+      operationId: User - Password Reset Verify
+      tags:
+        - User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                token:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "200":
+          description: The password has been reset
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      passwordReset:
+                        type: boolean
+        "400":
+          $ref: "#/paths/~1admin~1site/post/responses/400"
 components:
   securitySchemes:
     ApiKeyAuth:
@@ -355,6 +440,12 @@ components:
               message:
                 type: string
                 description: The nature of the error
+              code:
+                type: string
+                description: A system generated code for the error type
+              data:
+                type: object
+                description: Optional object with additional data
     403Response:
       description: Not allowed
       content:
@@ -365,6 +456,12 @@ components:
               message:
                 type: string
                 description: The nature of the error
+              code:
+                type: string
+                description: A system generated code for the error type
+              data:
+                type: object
+                description: Optional object with additional data
     404Response:
       description: Not found
       content:
@@ -375,6 +472,12 @@ components:
               message:
                 type: string
                 description: The nature of the error
+              code:
+                type: string
+                description: A system generated code for the error type
+              data:
+                type: object
+                description: Optional object with additional data
     409Response:
       description: Conflict or already exists
       content:
@@ -385,3 +488,25 @@ components:
               message:
                 type: string
                 description: The nature of the error
+              code:
+                type: string
+                description: A system generated code for the error type
+              data:
+                type: object
+                description: Optional object with additional data
+    419Response:
+      description: User session / JWT expired
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                description: The nature of the error
+              code:
+                type: string
+                description: A system generated code for the error type
+              data:
+                type: object
+                description: Optional object with additional data

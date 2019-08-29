@@ -32,6 +32,10 @@ paths:
     $ref: userPaths.yaml#/UserProfilePath
   /users/login:
     $ref: "userPaths.yaml#/UserLoginPath"
+  /users/reset:
+    $ref: "userPaths.yaml#/PasswordResetPath"
+  /users/reset/verify:
+    $ref: "userPaths.yaml#/PasswordResetVerifyPath"
 
 components:
   securitySchemes:
@@ -110,6 +114,12 @@ components:
               message:
                 type: string
                 description: The nature of the error
+              code:
+                type: string
+                description: A system generated code for the error type
+              data:
+                type: object
+                description: Optional object with additional data
     403Response:
       description: Not allowed
       content:
@@ -120,6 +130,12 @@ components:
               message:
                 type: string
                 description: The nature of the error
+              code:
+                type: string
+                description: A system generated code for the error type
+              data:
+                type: object
+                description: Optional object with additional data
     404Response:
       description: Not found
       content:
@@ -130,6 +146,12 @@ components:
               message:
                 type: string
                 description: The nature of the error
+              code:
+                type: string
+                description: A system generated code for the error type
+              data:
+                type: object
+                description: Optional object with additional data
     409Response:
       description: Conflict or already exists
       content:
@@ -140,3 +162,25 @@ components:
               message:
                 type: string
                 description: The nature of the error
+              code:
+                type: string
+                description: A system generated code for the error type
+              data:
+                type: object
+                description: Optional object with additional data
+    419Response:
+      description: User session / JWT expired
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                description: The nature of the error
+              code:
+                type: string
+                description: A system generated code for the error type
+              data:
+                type: object
+                description: Optional object with additional data

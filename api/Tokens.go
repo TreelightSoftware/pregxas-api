@@ -33,6 +33,8 @@ func GenerateToken(userID int64, tokenType string) (token string, err error) {
 	hasher.Write([]byte(str))
 	hash := hex.EncodeToString(hasher.Sum(nil))
 	token = hash[0:8]
+	// delete any existing tokens
+	Config.DbConn.Exec("DELETE FROM UserTokens WHERE tokenType = ? AND userId = ?", tokenType, userID)
 	_, err = Config.DbConn.Exec("INSERT INTO UserTokens (token, created, tokenType, userId) VALUES (?, NOW(), ?, ?)", token, tokenType, userID)
 	return token, err
 }
