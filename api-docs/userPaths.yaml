@@ -97,3 +97,54 @@ UserProfilePath:
         $ref: "index.yaml#/components/responses/401Response"
       '403':
         $ref: "index.yaml#/components/responses/403Response"
+
+PasswordResetPath:
+  post:
+    description: Begin the password reset process
+    operationId: User - Password Reset
+    tags:
+      - User
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "userModel.yaml#/PasswordResetInput"
+    responses:
+      '200':
+        description: The password reset process has started for the email provided
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: 
+                data:
+                  $ref: 'userModel.yaml#/PasswordResetResult'
+      '400':
+        $ref: "index.yaml#/components/responses/400Response"
+
+
+PasswordResetVerifyPath:
+  post:
+    description: Reset the password using a token provided by the system
+    operationId: User - Password Reset Verify
+    tags:
+      - User
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "userModel.yaml#/PasswordResetVerifyInput"
+    responses:
+      '200':
+        description: The password has been reset
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: 
+                data:
+                  $ref: 'userModel.yaml#/PasswordResetVerifyResult'
+      '400':
+        $ref: "index.yaml#/components/responses/400Response"
