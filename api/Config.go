@@ -233,10 +233,10 @@ func SetupApp() *chi.Mux {
 	r.Get("/me", GetMyProfileRoute)
 	r.Patch("/me", UpdateMyProfileRoute)
 	r.Post("/users/login", LoginUserRoute)
-	r.Post("/users/signup", SignupUserRoute)                      // TODO: needs OAS3 docs
-	r.Post("/users/signup/verify", VerifyEmailAndTokenRoute)      // TODO: needs OAS3 docs
-	r.Post("/users/login/reset", ResetPasswordStartRoute)         // TODO: needs OAS3 docs
-	r.Post("/users/login/reset/verify", ResetPasswordVerifyRoute) // TODO: needs OAS3 docs
+	r.Post("/users/signup", SignupUserRoute)                 // TODO: needs OAS3 docs
+	r.Post("/users/signup/verify", VerifyEmailAndTokenRoute) // TODO: needs OAS3 docs
+	r.Post("/users/login/reset", ResetPasswordStartRoute)
+	r.Post("/users/login/reset/verify", ResetPasswordVerifyRoute)
 
 	// communities
 	r.Post("/communities", CreateCommunityRoute)                 // TODO: needs OAS3 docs
@@ -256,11 +256,11 @@ func SetupApp() *chi.Mux {
 	r.Post("/communities/{communityID}/users/{userID}", ProcessCommunityMembershipRoute)  // this is for approving; TODO: needs OAS3 docs
 
 	// prayer requests
-	r.Get("/requests", GetGlobalPrayerRequestsRoute)            // TODO: needs OAS3 docs
-	r.Post("/requests", CreatePrayerRequestRoute)               // TODO: needs OAS3 docs
-	r.Get("/requests/{requestID}", GetPrayerRequestByIDRoute)   // TODO: needs OAS3 docs
-	r.Patch("/requests/{requestID}", UpdatePrayerRequestRoute)  // TODO: needs OAS3 docs
-	r.Delete("/requests/{requestID}", DeletePrayerRequestRoute) // TODO: needs OAS3 docs
+	r.Get("/requests", GetGlobalPrayerRequestsRoute)
+	r.Post("/requests", CreatePrayerRequestRoute)
+	r.Get("/requests/{requestID}", GetPrayerRequestByIDRoute)
+	r.Patch("/requests/{requestID}", UpdatePrayerRequestRoute)
+	r.Delete("/requests/{requestID}", DeletePrayerRequestRoute)
 
 	r.Get("/users/{userID}/requests", GetUserPrayerRequestsRoute) // TODO: needs OAS3 docs
 

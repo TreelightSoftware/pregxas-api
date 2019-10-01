@@ -29,13 +29,18 @@ paths:
     $ref: "sitePaths.yaml#/SiteInfoPath"
   ## USERS ##
   /me:
-    $ref: userPaths.yaml#/UserProfilePath
+    $ref: "userPaths.yaml#/UserProfilePath"
   /users/login:
     $ref: "userPaths.yaml#/UserLoginPath"
   /users/reset:
     $ref: "userPaths.yaml#/PasswordResetPath"
   /users/reset/verify:
     $ref: "userPaths.yaml#/PasswordResetVerifyPath"
+  ## PRAYER REQUESTS ##
+  /requests:
+    $ref: "requestPaths.yaml#/PrayerRequestsPath"
+  /requests/{requestId}:
+    $ref: "requestPaths.yaml#/PrayerRequestPath"
 
 components:
   securitySchemes:
@@ -45,18 +50,18 @@ components:
       name: jwt
 
   parameters:
-    email:
-      name: email
-      in: path
-      required: true
-      description: The email address
-      schema:
-        type: string
     userId:
       name: userId
       in: path
       required: true
       description: The user's database id
+      schema:
+        type: integer
+    requestId:
+      name: requestId
+      in: path
+      required: true
+      description: The prayer request's database id
       schema:
         type: integer
     ## Filtering ##

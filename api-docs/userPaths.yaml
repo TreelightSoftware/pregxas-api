@@ -21,7 +21,7 @@ UserLoginPath:
                 type: string
                 format: password
     responses:
-      '200':
+      "200":
         description: The user successfully logged in
         content:
           application/json:
@@ -29,12 +29,12 @@ UserLoginPath:
               type: object
               properties: 
                 data:
-                  $ref: 'userModel.yaml#/User'
-      '400':
+                  $ref: "userModel.yaml#/User"
+      "400":
         $ref: "index.yaml#/components/responses/400Response"
-      '401':
+      "401":
         $ref: "index.yaml#/components/responses/401Response"
-      '403':
+      "403":
         $ref: "index.yaml#/components/responses/403Response"
 
 UserProfilePath:
@@ -63,7 +63,7 @@ UserProfilePath:
                 type: string
                 format: password
     responses:
-      '200':
+      "200":
         description: The user successfully updated their profile
         content:
           application/json:
@@ -71,12 +71,12 @@ UserProfilePath:
               type: object
               properties: 
                 data:
-                  $ref: 'userModel.yaml#/User'
-      '400':
+                  $ref: "userModel.yaml#/User"
+      "400":
         $ref: "index.yaml#/components/responses/400Response"
-      '401':
+      "401":
         $ref: "index.yaml#/components/responses/401Response"
-      '403':
+      "403":
         $ref: "index.yaml#/components/responses/403Response"
   get:
     description: Get the current user's profile
@@ -84,7 +84,7 @@ UserProfilePath:
     tags:
       - User
     responses:
-      '200':
+      "200":
         description: The user profile
         content:
           application/json:
@@ -93,9 +93,9 @@ UserProfilePath:
               properties:
                 data:
                   $ref: "userModel.yaml#/User"
-      '401':
+      "401":
         $ref: "index.yaml#/components/responses/401Response"
-      '403':
+      "403":
         $ref: "index.yaml#/components/responses/403Response"
 
 PasswordResetPath:
@@ -111,7 +111,7 @@ PasswordResetPath:
           schema:
             $ref: "userModel.yaml#/PasswordResetInput"
     responses:
-      '200':
+      "200":
         description: The password reset process has started for the email provided
         content:
           application/json:
@@ -119,8 +119,8 @@ PasswordResetPath:
               type: object
               properties: 
                 data:
-                  $ref: 'userModel.yaml#/PasswordResetResult'
-      '400':
+                  $ref: "userModel.yaml#/PasswordResetResult"
+      "400":
         $ref: "index.yaml#/components/responses/400Response"
 
 
@@ -137,7 +137,7 @@ PasswordResetVerifyPath:
           schema:
             $ref: "userModel.yaml#/PasswordResetVerifyInput"
     responses:
-      '200':
+      "200":
         description: The password has been reset
         content:
           application/json:
@@ -145,6 +145,6 @@ PasswordResetVerifyPath:
               type: object
               properties: 
                 data:
-                  $ref: 'userModel.yaml#/PasswordResetVerifyResult'
-      '400':
+                  $ref: "userModel.yaml#/PasswordResetVerifyResult"
+      "400":
         $ref: "index.yaml#/components/responses/400Response"

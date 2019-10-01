@@ -6,7 +6,7 @@ SiteInfoPath:
       - Site
       - Admin
     responses:
-      '200':
+      "200":
         description: The site status
         content:
           application/json:
@@ -15,9 +15,9 @@ SiteInfoPath:
               properties:
                 data:
                   $ref: "siteModel.yaml#/Site"
-      '401':
+      "401":
         $ref: "index.yaml#/components/responses/401Response"
-      '403':
+      "403":
         $ref: "index.yaml#/components/responses/403Response"
   post:
     description: Setup a new site. Note that you must provide the `X-API-SECRET` header retrieved from the console on site setup.
@@ -32,7 +32,7 @@ SiteInfoPath:
           schema:
             $ref: "siteModel.yaml#/SiteSetup"
     responses:
-      '200':
+      "200":
         description: The site has been setup
         content:
           application/json:
@@ -44,11 +44,11 @@ SiteInfoPath:
                   properties:
                     active:
                       type: boolean
-      '400':
+      "400":
         $ref: "index.yaml#/components/responses/400Response"
-      '401':
+      "401":
         $ref: "index.yaml#/components/responses/401Response"
-      '403':
+      "403":
         $ref: "index.yaml#/components/responses/403Response"
-      '409':
+      "409":
         $ref: "index.yaml#/components/responses/409Response"
