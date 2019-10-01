@@ -214,15 +214,15 @@ paths:
                         type: string
                       username:
                         type: string
-                        format: date-time
                       lastLogin:
                         type: string
-                        format: date-time
+                        format: date
                       updated:
                         type: string
-                        format: date-time
+                        format: date
                       password:
-                        type: string
+                        type: password
+                        description: Only used when passed in as part of a request body
                       status:
                         type: string
                         enum:
@@ -366,6 +366,211 @@ paths:
                         type: boolean
         "400":
           $ref: "#/paths/~1admin~1site/post/responses/400"
+  /requests:
+    post:
+      description: Create a new prayer request
+      operationId: Prayer Request - Create
+      tags:
+        - Prayer Request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: The required fields for created a new prayer request
+              properties:
+                title:
+                  type: string
+                body:
+                  type: string
+                privacy:
+                  type: string
+                  enum:
+                    - private
+                    - public
+                  description: If public, this request will appear in the global list. If
+                    private, it will only appear in communities it is
+                    specifically added to.
+                tags:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: The user successfully created a new prayer request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: number
+                      title:
+                        type: string
+                      body:
+                        type: string
+                      createdBy:
+                        type: number
+                      created:
+                        type: date-time
+                      privacy:
+                        type: string
+                        enum:
+                          - private
+                          - public
+                        description: If public, this request will appear in the global
+                          list. If private, it will only appear in communities
+                          it is specifically added to.
+                      status:
+                        type: string
+                        enum:
+                          - pending
+                          - answered
+                          - not_answered
+                          - unknown
+                        description: If the prayer request has been updated to change the
+                          status
+                      tags:
+                        type: array
+                        items:
+                          type: string
+                      prayerCount:
+                        type: number
+                      username:
+                        type: string
+                      added:
+                        type: date-time
+                        description: When the request was added to the specific list; only
+                          present when getting a request from a list
+        "400":
+          $ref: "#/paths/~1admin~1site/post/responses/400"
+        "401":
+          $ref: "#/paths/~1admin~1site/get/responses/401"
+        "403":
+          $ref: "#/paths/~1admin~1site/get/responses/403"
+    get:
+      description: Get the global prayer request list
+      operationId: Prayer Request - Get Global List
+      tags:
+        - Prayer Request
+      responses:
+        "200":
+          description: The list of public prayer requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: {}
+        "401":
+          $ref: "#/paths/~1admin~1site/get/responses/401"
+        "403":
+          $ref: "#/paths/~1admin~1site/get/responses/403"
+  "/requests/{requestId}":
+    patch:
+      description: Update a prayer request
+      operationId: Prayer Request - Update
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          description: The prayer request's database id
+          schema:
+            type: integer
+      tags:
+        - Prayer Request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                privacy:
+                  type: string
+                  enum:
+                    - private
+                    - public
+                  description: If public, this request will appear in the global list. If
+                    private, it will only appear in communities it is
+                    specifically added to.
+                status:
+                  type: string
+                  enum:
+                    - pending
+                    - answered
+                    - not_answered
+                    - unknown
+                  description: If the prayer request has been updated to change the statu
+      responses:
+        "200":
+          description: The user successfully updated the prayer request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/paths/~1requests/post/responses/200/content/applicatio\
+                      n~1json/schema/properties/data"
+        "400":
+          $ref: "#/paths/~1admin~1site/post/responses/400"
+        "401":
+          $ref: "#/paths/~1admin~1site/get/responses/401"
+        "403":
+          $ref: "#/paths/~1admin~1site/get/responses/403"
+    get:
+      description: Get a single prayer request
+      operationId: Prayer Request - Get By Id
+      parameters:
+        - $ref: "#/paths/~1requests~1%7BrequestId%7D/patch/parameters/0"
+      tags:
+        - Prayer Request
+      responses:
+        "200":
+          description: The single request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/paths/~1requests/get/responses/200/content/application\
+                      ~1json/schema/properties/data/items"
+        "401":
+          $ref: "#/paths/~1admin~1site/get/responses/401"
+        "403":
+          $ref: "#/paths/~1admin~1site/get/responses/403"
+    delete:
+      description: Delete a single prayer request
+      operationId: Prayer Request - Delete
+      parameters:
+        - $ref: "#/paths/~1requests~1%7BrequestId%7D/patch/parameters/0"
+      tags:
+        - Prayer Request
+      responses:
+        "200":
+          description: The request was deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      deleted:
+                        type: boolean
+        "401":
+          $ref: "#/paths/~1admin~1site/get/responses/401"
+        "403":
+          $ref: "#/paths/~1admin~1site/get/responses/403"
 components:
   securitySchemes:
     ApiKeyAuth:
@@ -373,18 +578,18 @@ components:
       in: header
       name: jwt
   parameters:
-    email:
-      name: email
-      in: path
-      required: true
-      description: The email address
-      schema:
-        type: string
     userId:
       name: userId
       in: path
       required: true
       description: The user's database id
+      schema:
+        type: integer
+    requestId:
+      name: requestId
+      in: path
+      required: true
+      description: The prayer request's database id
       schema:
         type: integer
     start:

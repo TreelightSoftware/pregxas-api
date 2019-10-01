@@ -14,15 +14,15 @@ User:
       type: string
     username:
       type: string
-      format: date-time
     lastLogin:
       type: string
-      format: date-time
+      format: date
     updated:
       type: string
-      format: date-time
+      format: date
     password:
-      type: string
+      type: password
+      description: Only used when passed in as part of a request body
     status:
       type: string
       enum: [pending, verified]
