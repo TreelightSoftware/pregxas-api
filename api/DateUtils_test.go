@@ -19,6 +19,8 @@ func TestDateParsing(t *testing.T) {
 	input6 := "2017-11-28"
 	input7 := "2017-11-28T10:02:03Z"
 
+	_, err := ParseTimeToISO("badtime")
+	assert.NotNil(t, err)
 	output1, err := ParseTimeToISO(input1)
 	assert.Nil(t, err)
 	assert.Equal(t, desiredOutput, output1)
@@ -138,6 +140,10 @@ func TestDataRanges(t *testing.T) {
 			RunningTotal: 30,
 		},
 	}
+
+	simple, err := CreateDateRangesForReports([]DatePoint{}, "2018-06-27", "2018-06-27")
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(simple.Data))
 
 	processed, err := CreateDateRangesForReports(start, "2018-06-27 00:00:00", "2018-07-05")
 	assert.Nil(t, err)

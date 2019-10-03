@@ -137,11 +137,13 @@ func CreateDateRangesForReports(input []DatePoint, startDate string, endDate str
 		Count:        0,
 		RunningTotal: 0,
 	})
-	input = append(input, DatePoint{
-		Day:          endDate[:10],
-		Count:        0,
-		RunningTotal: 0,
-	})
+	if endDate != startDate {
+		input = append(input, DatePoint{
+			Day:          endDate[:10],
+			Count:        0,
+			RunningTotal: 0,
+		})
+	}
 
 	// now we sort
 	sort.Slice(input, func(i, j int) bool {

@@ -42,6 +42,32 @@ func TestUserSignupPaths(t *testing.T) {
 	assert.Nil(t, err)
 	defer DeleteUser(id)
 
+	// try to signup again, should fail because of the same email
+	badInput := map[string]string{
+		"firstName": "Kevin",
+		"lastName":  "Eaton",
+		"email":     fmt.Sprintf("Test-%d@pregxas", randID),
+		"username":  fmt.Sprintf("test-%d-1", randID),
+		"password":  fmt.Sprintf("pass-%d", randID),
+	}
+	b.Reset()
+	enc.Encode(&badInput)
+	code, _, _ = TestAPICall(http.MethodPost, "/users/signup", b, SignupUserRoute, "", "")
+	require.Equal(t, http.StatusBadRequest, code)
+
+	// ditto for username
+	badInput = map[string]string{
+		"firstName": "Kevin",
+		"lastName":  "Eaton",
+		"email":     fmt.Sprintf("Test-%d-1@pregxas", randID),
+		"username":  fmt.Sprintf("test-%d", randID),
+		"password":  fmt.Sprintf("pass-%d", randID),
+	}
+	b.Reset()
+	enc.Encode(&badInput)
+	code, _, _ = TestAPICall(http.MethodPost, "/users/signup", b, SignupUserRoute, "", "")
+	require.Equal(t, http.StatusBadRequest, code)
+
 	// try to login; should fail since not verified
 	loginInput := map[string]string{
 		"email":    input["email"],
@@ -51,6 +77,28 @@ func TestUserSignupPaths(t *testing.T) {
 	enc.Encode(&loginInput)
 	code, res, _ = TestAPICall(http.MethodPost, "/users/login", b, LoginUserRoute, "", "")
 	require.Equal(t, http.StatusForbidden, code)
+
+	// send a bad request to login
+	b.Reset()
+	enc.Encode(map[string]string{
+		"email":    "",
+		"password": "",
+	})
+	code, res, _ = TestAPICall(http.MethodPost, "/users/login", b, LoginUserRoute, "", "")
+	require.Equal(t, http.StatusBadRequest, code)
+
+	// send some bad verifies
+	b.Reset()
+	enc.Encode(map[string]string{})
+	code, res, _ = TestAPICall(http.MethodPost, "/users/signup/verify", b, VerifyEmailAndTokenRoute, "", "")
+	assert.Equal(t, http.StatusBadRequest, code)
+	b.Reset()
+	enc.Encode(map[string]string{
+		"email": "fake",
+		"token": "token",
+	})
+	code, res, _ = TestAPICall(http.MethodPost, "/users/signup/verify", b, VerifyEmailAndTokenRoute, "", "")
+	assert.Equal(t, http.StatusForbidden, code)
 
 	// email isn't sent in tests, so let's grab it from the DB
 	token, err := GetTokenForTest(id, "email")
@@ -96,8 +144,8 @@ func TestUserSignupPaths(t *testing.T) {
 	// update the profile and try again
 	profileUpdateInput := map[string]string{
 		"firstName": "Updated First",
-		"lastName": "Updated Last",
-		"username": "updated-user",
+		"lastName":  "Updated Last",
+		"username":  "updated-user",
 	}
 	b.Reset()
 	enc.Encode(&profileUpdateInput)
@@ -118,7 +166,7 @@ func TestUserSignupPaths(t *testing.T) {
 	assert.Equal(t, strings.ToLower(input["email"]), updated.Email)
 }
 
-func TestPasswordResetRoutes(t *testing.T){
+func TestPasswordResetRoutes(t *testing.T) {
 	ConfigSetup()
 	randID := rand.Int63n(99999999)
 	b := new(bytes.Buffer)
@@ -129,22 +177,55 @@ func TestPasswordResetRoutes(t *testing.T){
 	assert.Nil(t, err)
 	defer DeleteUserFromTest(&user)
 
+	// try two bad calls, one with no email and one with a non-existent email
+	b.Reset()
+	enc.Encode(map[string]string{})
+	code, _, _ := TestAPICall(http.MethodPost, "/users/login/reset", b, ResetPasswordStartRoute, "", "")
+	require.Equal(t, http.StatusBadRequest, code)
+	b.Reset()
+	enc.Encode(map[string]string{
+		"email": "1",
+	})
+	code, _, _ = TestAPICall(http.MethodPost, "/users/login/reset", b, ResetPasswordStartRoute, "", "")
+	require.Equal(t, http.StatusForbidden, code)
+
 	resetInput := map[string]string{
 		"email": user.Email,
 	}
 	b.Reset()
 	enc.Encode(&resetInput)
-	code, _, _ := TestAPICall(http.MethodPost, "/users/login/reset", b, ResetPasswordStartRoute, "", "")
+	code, _, _ = TestAPICall(http.MethodPost, "/users/login/reset", b, ResetPasswordStartRoute, "", "")
 	require.Equal(t, http.StatusOK, code)
 
 	// find the code
 	token, err := GetTokenForTest(user.ID, TokenPasswordReset)
 	require.Nil(t, err)
 
+	// send some bad verify calls
+
+	b.Reset()
+	enc.Encode(map[string]string{})
+	code, _, _ = TestAPICall(http.MethodPost, "/users/login/reset/verify", b, ResetPasswordVerifyRoute, "", "")
+	require.Equal(t, http.StatusBadRequest, code)
+	b.Reset()
+	enc.Encode(map[string]string{
+		"email": "1",
+	})
+	code, _, _ = TestAPICall(http.MethodPost, "/users/login/reset/verify", b, ResetPasswordStartRoute, "", "")
+	require.Equal(t, http.StatusBadRequest, code)
+	b.Reset()
+	enc.Encode(map[string]string{
+		"email":    "1",
+		"password": "moo",
+		"token":    "1",
+	})
+	code, _, _ = TestAPICall(http.MethodPost, "/users/login/reset/verify", b, ResetPasswordStartRoute, "", "")
+	require.Equal(t, http.StatusForbidden, code)
+
 	verifyInput := map[string]string{
-		"email": user.Email,
+		"email":    user.Email,
 		"password": fmt.Sprintf("pass-%d", randID),
-		"token": token,
+		"token":    token,
 	}
 	b.Reset()
 	enc.Encode(&verifyInput)
@@ -153,7 +234,7 @@ func TestPasswordResetRoutes(t *testing.T){
 
 	// login with the new password
 	loginInput := map[string]string{
-		"email": user.Email,
+		"email":    user.Email,
 		"password": verifyInput["password"],
 	}
 	b.Reset()
