@@ -246,8 +246,8 @@ func SetupApp() *chi.Mux {
 	r.Get("/communities/{communityID}", GetCommunityByIDRoute)   // TODO: needs OAS3 docs
 	r.Delete("/communities/{communityID}", DeleteCommunityRoute) // TODO: needs OAS3 docs
 
-	r.Post("/communities/{communityID}/subscribe", nil)
-	r.Delete("/communities/{communityID}/subscribe", nil)
+	r.Post("/communities/{communityID}/subscribe", nil)   // TODO: implement
+	r.Delete("/communities/{communityID}/subscribe", nil) // TODO: implement
 
 	// join requests
 	r.Get("/communities/{communityID}/users", GetCommunityLinksRoute)                     // this is for listing; TODO: needs OAS3 docs

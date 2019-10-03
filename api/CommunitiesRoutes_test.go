@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"testing"
 
@@ -48,12 +49,19 @@ func TestCommunityCRUDRoutes(t *testing.T) {
 	assert.Equal(t, "private", community.Privacy)
 	defer DeleteCommunity(community.ID)
 
-	// update it
+	// update it, bad call first
+
+	code, res, _ = TestAPICall(http.MethodPatch, "/communities/1", b, UpdateCommunityRoute, user.JWT, "")
+	assert.Equal(t, http.StatusForbidden, code)
+
 	update := Community{
-		Name:        "A Great Group",
-		Description: "A great test description",
-		Privacy:     "public",
+		Name:              "A Great Group",
+		Description:       "A great test description",
+		Privacy:           "public",
+		StripeChargeToken: "fake",
+		UserSignupStatus:  CommunityUserSignupStatusAccept,
 	}
+
 	b.Reset()
 	enc.Encode(&update)
 	code, res, _ = TestAPICall(http.MethodPatch, fmt.Sprintf("/communities/%d", community.ID), b, UpdateCommunityRoute, user.JWT, "")
@@ -151,7 +159,13 @@ func TestCommunityLinkRoutes(t *testing.T) {
 	assert.Equal(t, "approval_required", community.UserSignupStatus)
 	defer DeleteCommunity(community.ID)
 
-	// now user requests to join
+	// now user requests to join, setting bad calls first
+	code, res, _ = TestAPICall(http.MethodPut, fmt.Sprintf("/communities/%d/users/%d", community.ID, user.ID), b, RequestCommunityMembershipRoute, "", "")
+	assert.Equal(t, http.StatusForbidden, code)
+	code, res, _ = TestAPICall(http.MethodPut, "/communities/a/users/a", b, RequestCommunityMembershipRoute, user.JWT, "")
+	assert.Equal(t, http.StatusForbidden, code)
+	code, res, _ = TestAPICall(http.MethodPut, "/communities/1/users/1", b, RequestCommunityMembershipRoute, user.JWT, "")
+	assert.Equal(t, http.StatusForbidden, code)
 	code, res, _ = TestAPICall(http.MethodPut, fmt.Sprintf("/communities/%d/users/%d", community.ID, user.ID), b, RequestCommunityMembershipRoute, user.JWT, "")
 	assert.Equal(t, http.StatusOK, code)
 
@@ -194,6 +208,16 @@ func TestCommunityLinkRoutes(t *testing.T) {
 	userLink, _ = GetCommunityUserLink(community.ID, user2.ID)
 	require.Equal(t, "invited", userLink.Status)
 
+	// bad process calls
+	code, res, _ = TestAPICall(http.MethodPost, fmt.Sprintf("/communities/%d/users/%d", community.ID, user.ID), b, ProcessCommunityMembershipRoute, "", "")
+	assert.Equal(t, http.StatusForbidden, code)
+	code, res, _ = TestAPICall(http.MethodPost, "/communities/a/users/a", b, ProcessCommunityMembershipRoute, admin.JWT, "")
+	assert.Equal(t, http.StatusForbidden, code)
+	b.Reset()
+	enc.Encode(map[string]string{})
+	code, res, _ = TestAPICall(http.MethodPost, fmt.Sprintf("/communities/%d/users/%d", community.ID, user.ID), b, ProcessCommunityMembershipRoute, admin.JWT, "")
+	assert.Equal(t, http.StatusBadRequest, code)
+
 	// admin approves user
 	userLink, _ = GetCommunityUserLink(community.ID, user.ID)
 	send := map[string]string{
@@ -203,8 +227,11 @@ func TestCommunityLinkRoutes(t *testing.T) {
 
 	b.Reset()
 	enc.Encode(&send)
+	code, res, _ = TestAPICall(http.MethodPost, "/communities/1/users/1", b, ProcessCommunityMembershipRoute, admin.JWT, "")
+	assert.Equal(t, http.StatusForbidden, code)
+	b.Reset()
+	enc.Encode(&send)
 	code, res, _ = TestAPICall(http.MethodPost, fmt.Sprintf("/communities/%d/users/%d", community.ID, user.ID), b, ProcessCommunityMembershipRoute, admin.JWT, "")
-	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, code)
 	userLink, _ = GetCommunityUserLink(community.ID, user.ID)
 	assert.Equal(t, "member", userLink.Role)
@@ -234,4 +261,58 @@ func TestCommunityLinkRoutes(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.NotEqual(t, "member", userLink.Role)
 	assert.NotEqual(t, "accepted", userLink.Status)
+}
+
+func TestBadCommunityRouteCalls(t *testing.T) {
+	ConfigSetup()
+	randID := rand.Int63n(999999999)
+	b := new(bytes.Buffer)
+
+	admin := User{}
+	err := CreateTestUser(&admin)
+	assert.Nil(t, err)
+	defer DeleteUserFromTest(&admin)
+
+	user2 := User{}
+	err = CreateTestUser(&user2)
+	assert.Nil(t, err)
+	defer DeleteUserFromTest(&user2)
+	community := Community{
+		Name:      fmt.Sprintf("Test_%d", randID),
+		ShortCode: fmt.Sprintf("abc_%d", rand.Int63n(99999)),
+		Privacy:   "private",
+	}
+
+	err = CreateCommunity(&community)
+	assert.Nil(t, err)
+	assert.NotZero(t, community.ID)
+	defer DeleteCommunity(community.ID)
+
+	code, _, _ := TestAPICall(http.MethodGet, "/communities", b, CreateCommunityRoute, "", "")
+	assert.Equal(t, http.StatusForbidden, code)
+	code, _, _ = TestAPICall(http.MethodPost, "/communities", b, GetCommunityByIDRoute, "", "")
+	assert.Equal(t, http.StatusForbidden, code)
+	code, _, _ = TestAPICall(http.MethodGet, "/communities/public", b, GetPublicCommunitiesRoute, "", "")
+	assert.Equal(t, http.StatusForbidden, code)
+	code, _, _ = TestAPICall(http.MethodPatch, "/communities/1", b, UpdateCommunityRoute, "", "")
+	assert.Equal(t, http.StatusForbidden, code)
+	code, _, _ = TestAPICall(http.MethodPatch, "/communities/a", b, UpdateCommunityRoute, admin.JWT, "")
+	assert.Equal(t, http.StatusForbidden, code)
+	code, _, _ = TestAPICall(http.MethodPatch, fmt.Sprintf("/communities/%d", community.ID), b, UpdateCommunityRoute, user2.JWT, "")
+	assert.Equal(t, http.StatusForbidden, code)
+
+	code, _, _ = TestAPICall(http.MethodGet, "/communities/1", b, GetCommunityByIDRoute, "", "")
+	assert.Equal(t, http.StatusForbidden, code)
+	code, _, _ = TestAPICall(http.MethodGet, "/communities/a", b, GetCommunityByIDRoute, admin.JWT, "")
+	assert.Equal(t, http.StatusForbidden, code)
+	code, _, _ = TestAPICall(http.MethodGet, fmt.Sprintf("/communities/%d", community.ID), b, GetCommunityByIDRoute, user2.JWT, "")
+	assert.Equal(t, http.StatusForbidden, code)
+
+	code, _, _ = TestAPICall(http.MethodDelete, "/communities/1", b, DeleteCommunityRoute, "", "")
+	assert.Equal(t, http.StatusForbidden, code)
+	code, _, _ = TestAPICall(http.MethodDelete, "/communities/a", b, DeleteCommunityRoute, admin.JWT, "")
+	assert.Equal(t, http.StatusForbidden, code)
+	code, _, _ = TestAPICall(http.MethodDelete, fmt.Sprintf("/communities/%d", community.ID), b, DeleteCommunityRoute, user2.JWT, "")
+	assert.Equal(t, http.StatusForbidden, code)
+
 }
