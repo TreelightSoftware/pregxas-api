@@ -30,6 +30,16 @@ func TestSiteSetupRoute(t *testing.T) {
 	assert.Equal(t, "", site.SecretKey)
 	assert.Equal(t, "pending_setup", site.Status)
 
+	code, res, _ = TestAPICall(http.MethodPost, "/admin/site", b, SetupSiteRoute, "", "")
+	assert.Equal(t, http.StatusBadRequest, code)
+	code, res, _ = TestAPICall(http.MethodPost, "/admin/site", b, SetupSiteRoute, "", "moo")
+	assert.Equal(t, http.StatusForbidden, code)
+	b.Reset()
+	enc.Encode(map[string]string{})
+
+	code, res, _ = TestAPICall(http.MethodPost, "/admin/site", b, SetupSiteRoute, "", key)
+	assert.Equal(t, http.StatusBadRequest, code)
+
 	// now update it
 	input := map[string]interface{}{
 		"name":        "My Site",
