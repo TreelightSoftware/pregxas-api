@@ -67,11 +67,19 @@ Speak multiple languages? Although the API is mostly neutral in that regard, our
 An `X` represents a recently released feature that could use some testing but is, in theory, completed. A `-` represents something that is in progress but will likely span many different pull requests (such as adding OAS3 docs for every endpoint).
 
 [X] Finish migrating Prayer Requests and Prayers
+
 [ ] Implement emails and administrative reports
+
 [X] Implement Prayer Lists
+
 [ ] Implement subscriptions for communities
+
 [X] Implement reporting a prayer
+
 [-] Create OpenAPI 3 compliant docs for all end points (see `api-docs` folder and the `Config.go` file for `TODO` stubs on which endpoints need it)
+
 [ ] Build an administrative dashboard
+
 [ ] Migrate web application
+
 [ ] Migrate mobile application
