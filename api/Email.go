@@ -7,9 +7,10 @@ import (
 )
 
 // SendEmail sends an email. The body is the complete HTML body, so the expectation is that the
-// header, translation, and footer are all present and combined
+// header, translation, and footer are all present and combined. This file will typically not have a ton of test coverage as we don't want to
+// actually send an email through MailGun
 func SendEmail(to string, subject string, body string) (string, string, error) {
-	//we don't want to throw an error, we just want to return right out
+	//we don't want to throw an error, we just want to return right out if we are in a no-send
 	if !Config.MailShouldSend {
 		return "", "", nil
 	}
@@ -33,9 +34,10 @@ func SendEmail(to string, subject string, body string) (string, string, error) {
 	return resp, id, err
 }
 
-// SendEmailToGroup sends an email to a group of email addresses
+// SendEmailToGroup sends an email to a group of email addresses. This file will typically not have a ton of test coverage as we don't want to
+// actually send an email through MailGun
 func SendEmailToGroup(to []string, subject string, body string, asBCC bool) (string, string, error) {
-	//we don't want to throw an error, we just want to return right out
+	//we don't want to throw an error, we just want to return right out if we are in a no-send
 	if !Config.MailShouldSend {
 		return "", "", nil
 	}
@@ -72,6 +74,6 @@ func GenerateEmail(communityID int64, body string) string {
 	// TODO: Build out the header and footer for the org
 
 	header := ""
-	footer := `<p>The Pregxas Team<p><p>If you believe you recevied this message in error, please forward this message to support@treelightsoftware.com.</p>`
+	footer := fmt.Sprintf(`<p>The Pregxas Team</p><p>If you believe you received this message in error, please forward this message to %s.</p>`, Config.MailFromAddress)
 	return fmt.Sprintf("%s%s%s", header, body, footer)
 }
