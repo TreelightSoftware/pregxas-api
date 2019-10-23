@@ -56,7 +56,6 @@ func TestReportsCRUDRoutes(t *testing.T) {
 	// now create two reports (one anonymous and one with a user) and get them with a variety of inputs
 	input1 := Report{
 		RequestID:  request.ID,
-		Reason:     ReportReasonOffensive,
 		ReasonText: "This report is offensive to me",
 	}
 
@@ -66,10 +65,22 @@ func TestReportsCRUDRoutes(t *testing.T) {
 		ReasonText: "This report is threatening to me",
 	}
 
+	// make a bad call
+	code, res, _ = TestAPICall(http.MethodPost, "/requests/a/reports", b, ReportRequestRoute, "", "")
+	require.Equal(t, http.StatusForbidden, code)
+
+	// make a bad reason
+	b.Reset()
+	enc.Encode(&input1)
+	code, res, _ = TestAPICall(http.MethodPost, fmt.Sprintf("/requests/%d/reports", request.ID), b, ReportRequestRoute, "", "")
+	require.Equal(t, http.StatusBadRequest, code)
+
+	input1.Reason = ReportReasonOffensive
 	b.Reset()
 	enc.Encode(&input1)
 	code, res, _ = TestAPICall(http.MethodPost, fmt.Sprintf("/requests/%d/reports", request.ID), b, ReportRequestRoute, "", "")
 	require.Equal(t, http.StatusCreated, code)
+
 	_, body, _ := UnmarshalTestMap(res)
 	report1 := Report{}
 	mapstructure.Decode(body, &report1)
@@ -120,9 +131,26 @@ func TestReportsCRUDRoutes(t *testing.T) {
 
 	// update them
 
+	// first, poorly
+
+	code, res, _ = TestAPICall(http.MethodPatch, "/admin/reports/a", b, UpdateReportRoute, admin.JWT, "")
+	require.Equal(t, http.StatusForbidden, code)
+
+	badUpdate := Report{
+		Status: "notreal",
+	}
+	b.Reset()
+	enc.Encode(&badUpdate)
+	code, res, _ = TestAPICall(http.MethodPatch, fmt.Sprintf("/admin/reports/%d", report1.ID), b, UpdateReportRoute, admin.JWT, "")
+	require.Equal(t, http.StatusBadRequest, code)
+
 	update := Report{
 		Status: ReportStatusClosedNoAction,
 	}
+	b.Reset()
+	enc.Encode(&update)
+	code, res, _ = TestAPICall(http.MethodPatch, "/admin/reports/0", b, UpdateReportRoute, admin.JWT, "")
+	require.Equal(t, http.StatusForbidden, code)
 	b.Reset()
 	enc.Encode(&update)
 	code, res, _ = TestAPICall(http.MethodPatch, fmt.Sprintf("/admin/reports/%d", report1.ID), b, UpdateReportRoute, admin.JWT, "")
