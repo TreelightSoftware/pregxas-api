@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/kevineaton/pregxas-api/api"
+	api "github.com/treelightsoftware/pregxas-api/api"
 )
 
 func main() {
