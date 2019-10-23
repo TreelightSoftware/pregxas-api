@@ -2,11 +2,14 @@ version: '2'
 vars:
   MYSQLURL: "mysql://{{.PREGXAS_DB_USER}}:{{.PREGXAS_DB_PASSWORD}}@tcp({{.PREGXAS_DB_HOST}}:{{.PREGXAS_DB_PORT}})/{{.PREGXAS_DB_NAME}}"
 
+env:
+  GOFLAGS: "-mod=vendor"
+
 tasks:
   build:
     desc: Builds the API and generates a binary for the current OS
     cmds:
-      - go build .
+      - go build -mod=vendor .
 
   run:
     desc: Builds and runs the service locally
@@ -19,17 +22,18 @@ tasks:
   vendor:
     desc: Updates the vendor directory
     cmds:
-      - dep ensure
+      - go mod tidy
+      - go mod vendor
 
   test:
     desc: Runs go test
     cmds:
-      - go test -v ./api
+      - go test -mod=vendor -v ./api
 
   cover:
     desc: Runs coverage and generates the needed artifacts
     cmds:
-      - go test -v -coverprofile=coverage.out ./api && gocover-cobertura < coverage.out > coverage.xml && go tool cover -html=coverage.out -o coverage.html
+      - go test -mod=vendor -v -coverprofile=coverage.out ./api && gocover-cobertura < coverage.out > coverage.xml && go tool cover -html=coverage.out -o coverage.html
 
   docs:
     desc: Runs a godoc command locally
