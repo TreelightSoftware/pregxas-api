@@ -1,7 +1,6 @@
-FROM golang:1.12
+FROM golang:1.13
 
 RUN apt-get install -y git curl && \
-  curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh && \
   go get -u -v github.com/go-task/task/cmd/task && \
   go get github.com/t-yuki/gocover-cobertura && \
   mkdir -p /go/src/github.com/treelightsoftware && \
