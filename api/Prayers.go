@@ -10,10 +10,10 @@ const (
 	PrayerRequestStatusPending = "pending"
 	// PrayerRequestStatusAnswered represents a prayer that has been answered
 	PrayerRequestStatusAnswered = "answered"
-	// PrayerRequestStatusNotAnswered represnts a prayer that was not answered
+	// PrayerRequestStatusNotAnswered represents a prayer that was not answered
 	PrayerRequestStatusNotAnswered = "not_answered"
-	// PrayerRequestSatusUnknown represents a prayer that is unknown
-	PrayerRequestSatusUnknown = "unknown"
+	// PrayerRequestStatusUnknown represents a prayer that is unknown
+	PrayerRequestStatusUnknown = "unknown"
 
 	// PrayerTimeoutInMinutes is the number of minutes between times a user is allowed to submit a prayer made towards a prayer request
 	PrayerTimeoutInMinutes = 60 * 6
