@@ -51,7 +51,7 @@ func TestCommunityCRUDRoutes(t *testing.T) {
 
 	// update it, bad call first
 
-	code, res, _ = TestAPICall(http.MethodPatch, "/communities/1", b, UpdateCommunityRoute, user.JWT, "")
+	code, res, _ = TestAPICall(http.MethodPatch, "/communities/0", b, UpdateCommunityRoute, user.JWT, "")
 	assert.Equal(t, http.StatusForbidden, code)
 
 	update := Community{

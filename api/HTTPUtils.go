@@ -179,7 +179,7 @@ func ProcessQuery(r *http.Request) (start, end string, count, offset int, sortFi
 	}
 	end, err = ParseISOTimeToDBTime(endQ)
 	if err != nil {
-		end = "2020-01-01 00:00:00"
+		end = "2030-01-01 00:00:00"
 	}
 
 	//try to convert the limit and offset
