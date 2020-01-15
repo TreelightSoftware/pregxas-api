@@ -191,7 +191,6 @@ func TestPrayerRequestCRUDRoutes(t *testing.T) {
 		}
 	}
 	assert.True(t, found)
-	return
 
 	code, res, _ = TestAPICall(http.MethodGet, fmt.Sprintf("/users/%d/requests", admin.ID), b, GetCommunityPrayerRequestsRoute, user.JWT, "")
 	require.Equal(t, http.StatusOK, code)
