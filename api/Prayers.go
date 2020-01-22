@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"strings"
 	"time"
 )
@@ -316,7 +315,6 @@ func (u *PrayerRequest) processForDB() {
 
 // processForAPI ensures data consistency and creates the JWT
 func (u *PrayerRequest) processForAPI() {
-	fmt.Printf("\n----------- RAW ------------\n%+v\n", u)
 	if u == nil {
 		return
 	}
@@ -340,7 +338,4 @@ func (u *PrayerRequest) processForAPI() {
 	if u.Tags == nil {
 		u.Tags = []string{}
 	}
-
-	fmt.Printf("\n----------- RET ------------\n%+v\n", u)
-
 }
