@@ -13,14 +13,18 @@ type SiteStruct struct {
 // Site is the global Site variable with global configuration options from the DB
 var Site = SiteStruct{}
 
-// LoadSite lodas the site from the DB
+// LoadSite loads the site from the DB
 func LoadSite() error {
 	// if the site has already loaded, just return nil
 	if Site.Loaded {
 		return nil
 	}
 	err := Config.DbConn.Get(&Site, "SELECT * FROM Site LIMIT 1")
-	return err
+	if err != nil {
+		return err
+	}
+	Site.Loaded = true
+	return nil
 }
 
 // SetupInitialSite sets up the initial site for a first time installation

@@ -176,7 +176,9 @@ func UpdateMyProfileRoute(w http.ResponseWriter, r *http.Request) {
 		SendError(w, http.StatusBadRequest, "user_save_error", "could not update that user's information", nil)
 		return
 	}
+	jwt := found.JWT
 	found.clean()
+	found.JWT = jwt
 	Send(w, http.StatusOK, found)
 	return
 }
