@@ -228,6 +228,7 @@ func SetupApp() *chi.Mux {
 	// site routes
 	r.Get("/admin/site", GetSiteInfoRoute)
 	r.Post("/admin/site", SetupSiteRoute)
+	r.Patch("/admin/site", UpdateSiteRoute) // TODO: needs OAS3 docs
 
 	// user routes
 	r.Get("/me", GetMyProfileRoute)

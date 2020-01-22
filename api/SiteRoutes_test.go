@@ -10,6 +10,7 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSiteSetupRoute(t *testing.T) {
@@ -67,10 +68,27 @@ func TestSiteSetupRoute(t *testing.T) {
 	assert.Equal(t, http.StatusOK, code)
 	_, body, _ = UnmarshalTestMap(res)
 	userID, _ := convertTestJSONFloatToInt(body["id"])
-	assert.NotZero(t, userID)
+	require.NotZero(t, userID)
 	defer DeleteUser(userID)
 
 	assert.Equal(t, input["name"].(string), Site.Name)
 	assert.Equal(t, input["description"].(string), Site.Description)
+	jwt := body["jwt"].(string)
+
+	// now update the site settings
+	updateInput := map[string]string{
+		"name":         "Updated",
+		"description":  "Updated Description",
+		"logoLocation": "https://www.pregxas.com/logo.png",
+	}
+	b.Reset()
+	enc.Encode(&updateInput)
+	code, res, _ = TestAPICall(http.MethodPatch, "/admin/site", b, UpdateSiteRoute, jwt, "")
+	assert.Equal(t, http.StatusOK, code)
+	_, body, _ = UnmarshalTestMap(res)
+	assert.Equal(t, body["name"].(string), updateInput["name"])
+	assert.Equal(t, body["description"].(string), updateInput["description"])
+	assert.Equal(t, body["logoLocation"].(string), updateInput["logoLocation"])
+
 	DeleteSiteForTest()
 }

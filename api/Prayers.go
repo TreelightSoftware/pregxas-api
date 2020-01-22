@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"strings"
 	"time"
 )
@@ -107,6 +108,9 @@ func GetGlobalPrayerRequests(count, offset int) []PrayerRequest {
 	requests := []PrayerRequest{}
 	Config.DbConn.Select(&requests, `SELECT pr.*, u.username, (SELECT COUNT(*) FROM Prayers p WHERE p.prayerRequestId = pr.id) AS prayerCount 
 		FROM PrayerRequests pr, Users u WHERE pr.privacy = 'public' AND pr.createdBy = u.id ORDER BY pr.created DESC LIMIT ?,?`, offset, count)
+	for i := range requests {
+		requests[i].processForAPI()
+	}
 	return requests
 }
 
@@ -122,6 +126,9 @@ func GetPrayerRequestsForCommunity(communityID int64, status string, count, offs
 		Config.DbConn.Select(&requests, `SELECT pr.*, u.username, (SELECT COUNT(*) FROM Prayers p WHERE p.prayerRequestId = pr.id) AS prayerCount 
 			FROM PrayerRequests pr, Users u, PrayerRequestCommunityLinks prcl 
 			WHERE prcl.communityId = ? AND prcl.prayerRequestId = pr.id AND pr.createdBy = u.id ORDER BY pr.created DESC LIMIT ?,?`, communityID, offset, count)
+	}
+	for i := range requests {
+		requests[i].processForAPI()
 	}
 	return requests
 }
@@ -309,6 +316,7 @@ func (u *PrayerRequest) processForDB() {
 
 // processForAPI ensures data consistency and creates the JWT
 func (u *PrayerRequest) processForAPI() {
+	fmt.Printf("\n----------- RAW ------------\n%+v\n", u)
 	if u == nil {
 		return
 	}
@@ -316,17 +324,23 @@ func (u *PrayerRequest) processForAPI() {
 	if u.Created == "1970-01-01 00:00:00" {
 		u.Created = ""
 	} else {
-		u.Created, _ = ParseTimeToDate(u.Created)
+		u.Created, _ = ParseTimeToISO(u.Created)
 	}
 
 	if u.Added == "1970-01-01 00:00:00" {
 		u.Added = ""
 	} else {
-		u.Added, _ = ParseTimeToDate(u.Added)
+		u.Added, _ = ParseTimeToISO(u.Added)
 	}
 
 	if u.Status == "" {
 		u.Status = "pending"
 	}
+
+	if u.Tags == nil {
+		u.Tags = []string{}
+	}
+
+	fmt.Printf("\n----------- RET ------------\n%+v\n", u)
 
 }

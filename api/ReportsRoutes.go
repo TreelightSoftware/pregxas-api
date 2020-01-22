@@ -63,6 +63,8 @@ func ReportRequestRoute(w http.ResponseWriter, r *http.Request) {
 		SendError(w, http.StatusBadRequest, "report_create_failed", "report could not be created", err)
 		return
 	}
+	// TODO: send an email to the administrator
+
 	Send(w, http.StatusCreated, report)
 	return
 }

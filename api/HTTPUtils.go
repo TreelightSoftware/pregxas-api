@@ -93,7 +93,7 @@ func GetMiddlewares() []func(http.Handler) http.Handler {
 	cors := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Types", "X-CSRF-TOKEN", "Access-Control-Request-Headers", "JWT", "Content-Type"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Types", "X-CSRF-TOKEN", "Access-Control-Request-Headers", "JWT", "Content-Type", "X-API-SECRET"},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: true,
 		MaxAge:           300,

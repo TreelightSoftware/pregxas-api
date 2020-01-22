@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/go-chi/render"
@@ -22,6 +23,11 @@ func (data *SiteSetup) Bind(r *http.Request) error {
 	return nil
 }
 
+// Bind binds the data
+func (data *SiteStruct) Bind(r *http.Request) error {
+	return nil
+}
+
 // GetSiteInfoRoute gets the site info
 func GetSiteInfoRoute(w http.ResponseWriter, r *http.Request) {
 	// the site info should always return the current state without requiring the key
@@ -32,7 +38,7 @@ func GetSiteInfoRoute(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-// SetupSiteRoute sets up the site route
+// SetupSiteRoute sets up the site initially
 func SetupSiteRoute(w http.ResponseWriter, r *http.Request) {
 	// first, check for the key
 	foundKey := r.Header.Get("X-API-SECRET")
@@ -101,5 +107,47 @@ func SetupSiteRoute(w http.ResponseWriter, r *http.Request) {
 	Send(w, http.StatusOK, map[string]bool{
 		"active": true,
 	})
+	return
+}
+
+// UpdateSiteRoute updates the site's settings
+func UpdateSiteRoute(w http.ResponseWriter, r *http.Request) {
+	jwtUser, err := CheckForUser(r)
+	if err != nil || jwtUser.ID == 0 || jwtUser.PlatformRole != "admin" {
+		SendError(w, http.StatusForbidden, "permission_denied", "you don't have permission", nil)
+		return
+	}
+
+	input := SiteStruct{}
+	render.Bind(r, &input)
+	input.Name, _ = sanitize(input.Name)
+	input.Description, _ = sanitize(input.Description)
+	input.LogoLocation, _ = sanitize(input.LogoLocation)
+
+	err = LoadSite()
+	if err != nil {
+		SendError(w, http.StatusBadRequest, "site_load_error", "could not load the site", nil)
+		return
+	}
+
+	fmt.Printf("\n----------------\nInput: %+v\nSite: %+v\n", input, Site)
+
+	if input.Name != "" {
+		Site.Name = input.Name
+	}
+
+	if input.Description != "" {
+		Site.Description = input.Description
+	}
+
+	Site.LogoLocation = input.LogoLocation
+
+	err = UpdateSiteSettings(&Site)
+	if err != nil {
+		SendError(w, http.StatusBadRequest, "site_update_err", "could not save site settings", err)
+		return
+	}
+
+	Send(w, http.StatusOK, Site)
 	return
 }
