@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/go-chi/render"
@@ -129,8 +128,6 @@ func UpdateSiteRoute(w http.ResponseWriter, r *http.Request) {
 		SendError(w, http.StatusBadRequest, "site_load_error", "could not load the site", nil)
 		return
 	}
-
-	fmt.Printf("\n----------------\nInput: %+v\nSite: %+v\n", input, Site)
 
 	if input.Name != "" {
 		Site.Name = input.Name
