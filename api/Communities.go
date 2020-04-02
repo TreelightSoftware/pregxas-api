@@ -11,19 +11,22 @@ type Community struct {
 	ID          int64  `json:"id" db:"id"`
 	Name        string `json:"name" db:"name"`
 	Description string `json:"description" db:"description"`
-	ShortCode   string `json:"shortCode" db:"shortCode"`
+	ShortCode   string `json:"shortCode,omitempty" db:"shortCode"`
 	Created     string `json:"created" db:"created"`
 	Privacy     string `json:"privacy" db:"privacy"`
 	// UserSignupStatus is a setting that sets the default status of users who sign up
 	UserSignupStatus    string `json:"userSignupStatus" db:"userSignupStatus"`
 	Plan                string `json:"plan" db:"plan"`
 	PlanPaidThrough     string `json:"planPaidThrough" db:"planPaidThrough"`
-	PlanDiscountPercent int64  `json:"planDiscountPercent" db:"planDiscountPercent"`
-	StripeChargeToken   string `json:"stripeChargeToken" db:"stripeChargeToken"`
+	PlanDiscountPercent int64  `json:"planDiscountPercent,omitempty" db:"planDiscountPercent"`
+	StripeChargeToken   string `json:"stripeChargeToken,omitempty" db:"stripeChargeToken"`
 	// UserStatus is only populated in queries in which a user is joined or invited to a community
 	UserStatus string `json:"userStatus" db:"userStatus"`
 	// UserRole is only populated in queries in which a user is joined or invited to a community
 	UserRole string `json:"userRole" db:"userRole"`
+
+	MemberCount  int64 `json:"memberCount" db:"memberCount"`
+	RequestCount int64 `json:"requestCount" db:"requestCount"`
 }
 
 // CommunityUserLink is a link between a user and a community
@@ -105,7 +108,10 @@ const (
 // GetCommunityByShortCode gets a community by its short code
 func GetCommunityByShortCode(shortCode string) (*Community, error) {
 	found := &Community{}
-	err := Config.DbConn.Get(found, "SELECT c.* FROM Communities c WHERE c.shortCode = ?", shortCode)
+	err := Config.DbConn.Get(found, `SELECT c.*,
+	(SELECT COUNT(*) FROM CommunityUserLinks cul WHERE cul.communityId = c.id AND cul.status = 'accepted') AS memberCount,
+	(SELECT COUNT(*) FROM PrayerRequestCommunityLinks prcl WHERE prcl.communityId = c.id) AS requestCount 
+	FROM Communities c WHERE c.shortCode = ?`, shortCode)
 	found.processForAPI()
 	return found, err
 }
@@ -113,7 +119,10 @@ func GetCommunityByShortCode(shortCode string) (*Community, error) {
 // GetCommunityByID gets a community by its id
 func GetCommunityByID(id int64) (*Community, error) {
 	found := &Community{}
-	err := Config.DbConn.Get(found, "SELECT c.* FROM Communities c WHERE c.id = ? LIMIT 1", id)
+	err := Config.DbConn.Get(found, `SELECT c.* ,
+	(SELECT COUNT(*) FROM CommunityUserLinks cul WHERE cul.communityId = c.id AND cul.status = 'accepted') AS memberCount,
+	(SELECT COUNT(*) FROM PrayerRequestCommunityLinks prcl WHERE prcl.communityId = c.id) AS requestCount
+	FROM Communities c WHERE c.id = ? LIMIT 1`, id)
 	found.processForAPI()
 	return found, err
 }
@@ -225,8 +234,10 @@ func GetCountOfUsersInCommunity(communityID int64) (int64, error) {
 // GetCommunitiesForUser gets all of the communities for a user as well as their status
 func GetCommunitiesForUser(userID int64) ([]Community, error) {
 	comms := []Community{}
-	err := Config.DbConn.Select(&comms, `SELECT c.*, cul.status AS userStatus, cul.role as userRole 
-		FROM Communities c, CommunityUserLinks cul WHERE cul.userId = ? AND cul.communityId = c.id ORDER BY c.name`, userID)
+	err := Config.DbConn.Select(&comms, `SELECT c.*, cul.status AS userStatus, cul.role as userRole,
+	(SELECT COUNT(*) FROM CommunityUserLinks cul WHERE cul.communityId = c.id AND cul.status = 'accepted') AS memberCount,
+	(SELECT COUNT(*) FROM PrayerRequestCommunityLinks prcl WHERE prcl.communityId = c.id) AS requestCount
+	FROM Communities c, CommunityUserLinks cul WHERE cul.userId = ? AND cul.communityId = c.id ORDER BY c.name`, userID)
 	for i := range comms {
 		comms[i].processForAPI()
 	}
@@ -247,11 +258,17 @@ func GetPublicCommunities(sortField, sortDir string, count, offset int) ([]Commu
 	if sortField != "name" && sortField != "created" {
 		sortField = "name"
 	}
-	err := Config.DbConn.Select(&comms, fmt.Sprintf(`SELECT c.* FROM Communities c
-	WHERE c.privacy = 'public' ORDER BY c.%s %s LIMIT ?,?`, sortField, sortDir), offset, count)
+	err := Config.DbConn.Select(&comms, fmt.Sprintf(`
+	SELECT c.*, 
+	(SELECT COUNT(*) FROM CommunityUserLinks cul WHERE cul.communityId = c.id AND cul.status = 'accepted') AS memberCount,
+	(SELECT COUNT(*) FROM PrayerRequestCommunityLinks prcl WHERE prcl.communityId = c.id) AS requestCount
+	FROM Communities c
+	WHERE c.privacy = 'public'
+	ORDER BY c.%s %s LIMIT ?,?`, sortField, sortDir), offset, count)
 
 	for i := range comms {
 		comms[i].processForAPI()
+		comms[i].clean()
 	}
 	return comms, err
 }
@@ -305,4 +322,10 @@ func (input *Community) processForAPI() {
 	} else {
 		input.Created, _ = ParseTimeToDate(input.Created)
 	}
+}
+
+func (input *Community) clean() {
+	input.StripeChargeToken = ""
+	input.PlanDiscountPercent = 0
+	input.ShortCode = ""
 }

@@ -76,7 +76,7 @@ An `X` represents a recently released feature that could use some testing but is
 
 [X] Implement reporting a prayer
 
-[-] Create OpenAPI 3 compliant docs for all end points (see `api-docs` folder and the `Config.go` file for `TODO` stubs on which endpoints need it)
+[-] Create OpenAPI 3 compliant docs for all end points (see the [API Docs Repo](https://github.com/TreelightSoftware/pregxas-api-docs) folder and the `Config.go` file for `TODO` stubs on which endpoints need it)
 
 [ ] Build an administrative dashboard
 
