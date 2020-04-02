@@ -134,12 +134,12 @@ func ConfigSetup() *ConfigStruct {
 	_, err = c.DbConn.Exec("SELECT * FROM Sites WHERE status = 'active' LIMIT 1")
 	if err != nil && (c.Environment == "production" || c.Environment == "develop") {
 		// currently, migrate is not working correctly. This needs to be looked at
-		// c.DbConn.Exec(fmt.Sprintf("CREATE DATABASE %s", c.dbName))
-		// err = populateDB(c.dbUser, c.dbPassword, c.dbHost, c.dbPort, c.dbName)
-		// if err != nil {
-		// 	fmt.Printf("\n%+v\n", err)
-		// 	panic("no database schema!")
-		// }
+		c.DbConn.Exec(fmt.Sprintf("CREATE DATABASE %s", c.dbName))
+		err = populateDB(c.dbUser, c.dbPassword, c.dbHost, c.dbPort, c.dbName)
+		if err != nil {
+			fmt.Printf("\n%+v\n", err)
+			panic("no database schema!")
+		}
 	}
 	// now, try to get the site so we can figure out if setup is needed
 	err = LoadSite()

@@ -111,14 +111,6 @@ func TestCommunityCRUDRoutes(t *testing.T) {
 	assert.Equal(t, http.StatusOK, code)
 	_, bodyA, _ = UnmarshalTestArray(res)
 	assert.Zero(t, len(bodyA))
-	code, res, _ = TestAPICall(http.MethodGet, "/communities/public", b, GetCommunitiesForUserRoute, user.JWT, "")
-	assert.Equal(t, http.StatusOK, code)
-	_, bodyA, _ = UnmarshalTestArray(res)
-	assert.Zero(t, len(bodyA))
-	code, res, _ = TestAPICall(http.MethodGet, "/communities/public", b, GetCommunitiesForUserRoute, user2.JWT, "")
-	assert.Equal(t, http.StatusOK, code)
-	_, bodyA, _ = UnmarshalTestArray(res)
-	assert.Zero(t, len(bodyA))
 
 }
 
@@ -227,7 +219,7 @@ func TestCommunityLinkRoutes(t *testing.T) {
 
 	b.Reset()
 	enc.Encode(&send)
-	code, res, _ = TestAPICall(http.MethodPost, "/communities/1/users/1", b, ProcessCommunityMembershipRoute, admin.JWT, "")
+	code, res, _ = TestAPICall(http.MethodPost, "/communities/0/users/0", b, ProcessCommunityMembershipRoute, admin.JWT, "")
 	assert.Equal(t, http.StatusForbidden, code)
 	b.Reset()
 	enc.Encode(&send)
