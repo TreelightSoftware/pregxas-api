@@ -42,7 +42,12 @@ func CreateCommunityRoute(w http.ResponseWriter, r *http.Request) {
 
 	if input.ShortCode == "" {
 		rand.Seed(time.Now().UnixNano())
-		input.ShortCode = fmt.Sprintf("%s%d%d%d", strings.ToLower(input.Name[0:2]), rand.Int63n(9), rand.Int63n(9), rand.Int63n(9))
+		nameLength := len(input.Name)
+		nameCode := input.Name
+		if nameLength > 10 {
+			nameCode = input.Name[:11]
+		}
+		input.ShortCode = fmt.Sprintf("%s%d%d%d%d", strings.ToLower(nameCode), rand.Int63n(9), rand.Int63n(9), rand.Int63n(9), jwtUser.ID)
 	}
 
 	if input.Privacy == "" {
@@ -116,8 +121,8 @@ func UpdateCommunityRoute(w http.ResponseWriter, r *http.Request) {
 		community.Description = input.Description
 	}
 
-	if input.StripeChargeToken != "" {
-		community.StripeChargeToken = input.StripeChargeToken
+	if input.JoinCode != "" {
+		community.JoinCode = input.JoinCode
 	}
 
 	if input.Privacy != "" {
@@ -196,12 +201,21 @@ func GetCommunityByIDRoute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if community.Privacy == "private" {
-		_, err = GetUserRoleForCommunity(communityID, jwtUser.ID)
-		if err != nil {
-			SendError(w, http.StatusForbidden, "permission_denied", "you don't have permission", err)
-			return
-		}
+	role, joinErr := GetUserRoleForCommunity(communityID, jwtUser.ID)
+
+	if community.Privacy == "private" && (role == "" || joinErr != nil) {
+		SendError(w, http.StatusForbidden, "community_user_not_member", "you are not a member of this community", err)
+		return
+	}
+
+	// if the user is not an admin, we strip out some field
+	if role != "admin" {
+		community.JoinCode = ""
+		community.ShortCode = ""
+		community.UserSignupStatus = ""
+		community.PlanPaidThrough = ""
+		community.PlanDiscountPercent = 0
+		community.StripeSubscriptionID = ""
 	}
 
 	Send(w, http.StatusOK, community)
@@ -414,7 +428,7 @@ func ProcessCommunityMembershipRoute(w http.ResponseWriter, r *http.Request) {
 	if userID == jwtUser.ID {
 		// it is a user managing their own invitation
 		if link.Status != "invited" {
-			SendError(w, http.StatusBadRequest, "community_user_link_not_invited", "you can only manage invitations where the status is invited", link)
+			SendError(w, http.StatusBadRequest, "community_user_link_not_invited", "you can only manage invitations where the status is not invited", link)
 			return
 		}
 		// update the link

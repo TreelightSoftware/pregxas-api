@@ -46,6 +46,12 @@ The `Site` is the single installation. If you are running this on your own, you 
 
 Each Site can have several `Communities`. Communities can be free or paid subscriptions (a future plan will allow for toggling plan thresholds and hiding subscription options). Users can request to join communities and admins may invite users to communities.
 
+A public community is listed publicly but has several options for handling membership. Auto approval allows anyone to join. Admins can also choose to only approve requests manually. A third option exists and is listed below.
+
+A private community is not listed in the public feed. It can still be joined by sending invitations. Users cannot directly request to join a private community; they must be invited.
+
+Both private and public communities can be setup with a `shortCode`. This shortCode allows a user to join a community with a specified code. If the user requests to join with the correct code, they are automatically joined to the group as a member.
+
 `Prayer Requests` are single requests for prayers. They are made by a user and can then be joined to specific communities. If the request is marked `private` it will NOT show up in the global feed.
 
 Users may add `prayers` to a request. These are only allowed once within a sliding time window. An email may optionally be sent with a list of Prayer Requests prayed for and updates.

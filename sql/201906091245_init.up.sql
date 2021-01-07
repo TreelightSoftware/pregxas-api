@@ -20,14 +20,14 @@ CREATE TABLE `Communities` (
   `name` varchar(128) NOT NULL DEFAULT '',
   `description` varchar(1024) NOT NULL DEFAULT '',
   `shortCode` varchar(24) NOT NULL DEFAULT '',
+  `joinCode` varchar(24) NOT NULL DEFAULT '',
   `created` datetime NOT NULL,
   `privacy` ENUM('private', 'public') NOT NULL DEFAULT 'private',
-  `userSignupStatus` ENUM('none', 'approval_required', 'auto_accept') NOT NULL DEFAULT 'auto_accept', 
-  -- none = no user can signup; approval_required = admin must approve; auto_accept = users automatically accepted
+  `userSignupStatus` ENUM('none', 'short_code', 'approval_required', 'auto_accept') NOT NULL DEFAULT 'auto_accept', 
   `plan` ENUM('free','basic','pro') NOT NULL DEFAULT 'free', -- the plan for the community, which essentially just places limits on what they can do
   `planPaidThrough` date NOT NULL DEFAULT '1970-01-01',
   `planDiscountPercent` int NOT NULL DEFAULT 0,
-  `stripeChargeToken` varchar(32) NOT NULL DEFAULT '',
+  `stripeSubscriptionId` varchar(32) NOT NULL DEFAULT '',
   PRIMARY KEY (`id`),
   UNIQUE KEY `shortCode` (`shortCode`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

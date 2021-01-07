@@ -1,4 +1,4 @@
-FROM golang:1.13
+FROM golang:1.15
 
 RUN apt-get install -y git curl && \
   go get -u -v github.com/go-task/task/cmd/task && \

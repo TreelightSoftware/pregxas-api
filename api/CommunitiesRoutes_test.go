@@ -41,7 +41,7 @@ func TestCommunityCRUDRoutes(t *testing.T) {
 	b.Reset()
 	enc.Encode(&input)
 	code, res, _ := TestAPICall(http.MethodPost, "/communities", b, CreateCommunityRoute, user.JWT, "")
-	assert.Equal(t, http.StatusCreated, code)
+	require.Equal(t, http.StatusCreated, code)
 	_, body, _ := UnmarshalTestMap(res)
 	community := Community{}
 	mapstructure.Decode(body, &community)
@@ -55,11 +55,11 @@ func TestCommunityCRUDRoutes(t *testing.T) {
 	assert.Equal(t, http.StatusForbidden, code)
 
 	update := Community{
-		Name:              "A Great Group",
-		Description:       "A great test description",
-		Privacy:           "public",
-		StripeChargeToken: "fake",
-		UserSignupStatus:  CommunityUserSignupStatusAccept,
+		Name:                 "A Great Group",
+		Description:          "A great test description",
+		Privacy:              "public",
+		StripeSubscriptionID: "fake",
+		UserSignupStatus:     CommunityUserSignupStatusAccept,
 	}
 
 	b.Reset()
