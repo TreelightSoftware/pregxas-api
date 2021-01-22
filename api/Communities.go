@@ -11,19 +11,20 @@ type Community struct {
 	ID          int64  `json:"id" db:"id"`
 	Name        string `json:"name" db:"name"`
 	Description string `json:"description" db:"description"`
-	ShortCode   string `json:"shortCode,omitempty" db:"shortCode"`
+	ShortCode   string `json:"shortCode,omitempty" db:"shortCode"` // this is a lookup for a specific community
+	JoinCode    string `json:"joinCode,omitempty" db:"joinCode"`   // this is a code used to join a community
 	Created     string `json:"created" db:"created"`
 	Privacy     string `json:"privacy" db:"privacy"`
 	// UserSignupStatus is a setting that sets the default status of users who sign up
-	UserSignupStatus    string `json:"userSignupStatus" db:"userSignupStatus"`
-	Plan                string `json:"plan" db:"plan"`
-	PlanPaidThrough     string `json:"planPaidThrough" db:"planPaidThrough"`
-	PlanDiscountPercent int64  `json:"planDiscountPercent,omitempty" db:"planDiscountPercent"`
-	StripeChargeToken   string `json:"stripeChargeToken,omitempty" db:"stripeChargeToken"`
+	UserSignupStatus     string `json:"userSignupStatus,omitempty" db:"userSignupStatus"`
+	Plan                 string `json:"plan" db:"plan"`
+	PlanPaidThrough      string `json:"planPaidThrough,omitempty" db:"planPaidThrough"`
+	PlanDiscountPercent  int64  `json:"planDiscountPercent,omitempty" db:"planDiscountPercent"`
+	StripeSubscriptionID string `json:"stripeSubscriptionId,omitempty" db:"stripeSubscriptionId"`
 	// UserStatus is only populated in queries in which a user is joined or invited to a community
-	UserStatus string `json:"userStatus" db:"userStatus"`
+	UserStatus string `json:"userStatus,omitempty" db:"userStatus"`
 	// UserRole is only populated in queries in which a user is joined or invited to a community
-	UserRole string `json:"userRole" db:"userRole"`
+	UserRole string `json:"userRole,omitempty" db:"userRole"`
 
 	MemberCount  int64 `json:"memberCount" db:"memberCount"`
 	RequestCount int64 `json:"requestCount" db:"requestCount"`
@@ -51,8 +52,8 @@ type CommunityPlan struct {
 
 var plans = map[string]CommunityPlan{
 	CommunityPlanFree: CommunityPlan{
-		AllowedUsers:          100,
-		AllowedActiveRequests: 100,
+		AllowedUsers:          50,
+		AllowedActiveRequests: 50,
 		MonthlyPrice:          0,
 	},
 	CommunityPlanBasic: CommunityPlan{
@@ -70,6 +71,9 @@ var plans = map[string]CommunityPlan{
 const (
 	// CommunityUserSignupStatusNone indicates users cannot signup for the community, even with a short code
 	CommunityUserSignupStatusNone = "none"
+
+	// CommunityUserSignupStatusJoinCode indicates that a user can join the community with a join code
+	CommunityUserSignupStatusJoinCode = "join_code"
 
 	// CommunityUserSignupStatusApproval indicates users can request to join, but it is private by default and needs approval
 	CommunityUserSignupStatusApproval = "approval_required"
@@ -101,7 +105,7 @@ const (
 	// CommunityPlanBasic represents the basic plan, allowing more users and requests
 	CommunityPlanBasic = "basic"
 
-	// CommunityPlanPro represents the pro plan, which allows unlimited requests and users
+	// CommunityPlanPro represents the pro plan, which allows a lot more requests and users
 	CommunityPlanPro = "pro"
 )
 
@@ -131,8 +135,8 @@ func GetCommunityByID(id int64) (*Community, error) {
 func CreateCommunity(input *Community) error {
 	input.processForDB()
 	defer input.processForAPI()
-	result, err := Config.DbConn.NamedExec(`INSERT INTO Communities (name, description, shortCode, created, userSignupStatus, privacy)
-		VALUES (:name, :description, :shortCode, NOW(), :userSignupStatus, :privacy)`, input)
+	result, err := Config.DbConn.NamedExec(`INSERT INTO Communities (name, description, shortCode, joinCode, created, userSignupStatus, privacy)
+		VALUES (:name, :description, :shortCode, :joinCode, NOW(), :userSignupStatus, :privacy)`, input)
 	if err != nil {
 		return err
 	}
@@ -144,7 +148,7 @@ func CreateCommunity(input *Community) error {
 func UpdateCommunity(input *Community) error {
 	input.processForDB()
 	defer input.processForAPI()
-	_, err := Config.DbConn.NamedExec(`UPDATE Communities SET name = :name, description = :description, shortCode = :shortCode, userSignupStatus = :userSignupStatus, privacy = :privacy WHERE id = :id`, input)
+	_, err := Config.DbConn.NamedExec(`UPDATE Communities SET name = :name, description = :description, shortCode = :shortCode, joinCode = :joinCode, userSignupStatus = :userSignupStatus, privacy = :privacy WHERE id = :id`, input)
 	return err
 }
 
@@ -322,10 +326,14 @@ func (input *Community) processForAPI() {
 	} else {
 		input.Created, _ = ParseTimeToDate(input.Created)
 	}
+
+	if input.PlanPaidThrough == "1970-01-01" {
+		input.PlanPaidThrough = ""
+	}
 }
 
 func (input *Community) clean() {
-	input.StripeChargeToken = ""
+	input.StripeSubscriptionID = ""
 	input.PlanDiscountPercent = 0
-	input.ShortCode = ""
+	input.JoinCode = ""
 }

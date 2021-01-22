@@ -283,7 +283,7 @@ func SetupApp() *chi.Mux {
 	r.Put("/lists/requests/{listID}/{requestID}", AddPrayerRequestToPrayerListRoute)         // TODO: needs OAS3 docs
 	r.Delete("/lists/requests/{listID}/{requestID}", RemovePrayerRequestFromPrayerListRoute) // TODO: needs OAS3 docs
 
-	// reports
+	// reports are things that users reported for a variety of reasons
 	r.Post("/requests/{requestID}/reports", ReportRequestRoute)      // TODO: needs OAS3 docs
 	r.Get("/requests/{requestID}/reports", GetReportsOnRequestRoute) // TODO: needs OAS3 docs
 

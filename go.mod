@@ -16,6 +16,7 @@ require (
 	github.com/go-chi/render v1.0.1
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/golang-migrate/migrate v3.5.4+incompatible
+	github.com/golang/protobuf v1.3.1 // indirect
 	github.com/goware/cors v1.0.0
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
@@ -29,6 +30,6 @@ require (
 	golang.org/x/crypto v0.0.0-20190611184440-5c40567a22f8
 	golang.org/x/net v0.0.0-20190611141213-3f473d35a33a // indirect
 	golang.org/x/sys v0.0.0-20190610200419-93c9922d18ae // indirect
-	google.golang.org/appengine v1.6.1 // indirect
+	golang.org/x/text v0.3.2 // indirect
 	gopkg.in/mailgun/mailgun-go.v1 v1.1.1
 )

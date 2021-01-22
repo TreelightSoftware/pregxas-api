@@ -7,7 +7,7 @@ github.com/go-chi/chi
 github.com/go-chi/chi/middleware
 # github.com/go-chi/render v1.0.1
 github.com/go-chi/render
-# github.com/go-sql-driver/mysql v1.4.1
+# github.com/go-sql-driver/mysql v1.5.0
 github.com/go-sql-driver/mysql
 # github.com/golang-migrate/migrate v3.5.4+incompatible
 github.com/golang-migrate/migrate
@@ -42,7 +42,5 @@ golang.org/x/net/html
 golang.org/x/net/html/atom
 # golang.org/x/sys v0.0.0-20190610200419-93c9922d18ae
 golang.org/x/sys/unix
-# google.golang.org/appengine v1.6.1
-google.golang.org/appengine/cloudsql
 # gopkg.in/mailgun/mailgun-go.v1 v1.1.1
 gopkg.in/mailgun/mailgun-go.v1
