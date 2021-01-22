@@ -1,16 +1,13 @@
 FROM golang:1.15
 
-RUN apt-get install -y git curl && \
+RUN apt-get update && apt-get install -y git curl wait-for-it && rm -fr /var/lib/apt/lists/* && \
   go get -u -v github.com/go-task/task/cmd/task && \
-  go get github.com/t-yuki/gocover-cobertura && \
-  mkdir -p /go/src/github.com/treelightsoftware && \
-  mkdir -p /root/.ssh && \
-  echo "IdentityFile /root/.ssh/id_rsa" >> /etc/ssh/ssh_config && \
-  echo "Host github.com\n    StrictHostKeyChecking no\n" >> /root/.ssh/config \
-  echo "Host bitbucket.org\n    StrictHostKeyChecking no\n" >> /root/.ssh/config
+  URL=https://github.com/golang-migrate/migrate/releases/download/v3.3.1/migrate.linux-amd64.tar.gz && \
+  echo $URL && curl -#L $URL | tar -zxf - -C /go/bin/ && \
+  mv -v /go/bin/migrate.linux-amd64 /go/bin/migrate
+
 
 ADD ./ /go/src/github.com/treelightsoftware/pregxas-api
 WORKDIR /go/src/github.com/treelightsoftware/pregxas-api
 
 RUN task build
-CMD ["task", "run"]
