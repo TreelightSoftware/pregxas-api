@@ -1,0 +1,31 @@
+version: '3'
+services:
+  api-service:
+    build: ./
+    image: treelightsoftware/pregxas-api
+    environment:
+      - PREGXAS_DB_USER=root
+      - PREGXAS_DB_PASSWORD=password
+      - PREGXAS_DB_NAME=pregxas
+      - PREGXAS_DB_HOST=db
+      - PREGXAS_DB_PORT=3306
+      - PREGXAS_CACHE_ADDRESS=cache:6379
+      - PREGXAS_CACHE_PASSWORD=xyzzy
+      - PREGXAS_AMQ_HOST=queue
+      - PREGXAS_AMQ_PORT=5672
+    depends_on:
+      - db
+      - cache
+    volumes:
+      - ${PWD}:/go/src/github.com/TreelightSoftware/pregxas-api
+    command: "bash -c 'wait-for-it -h db -p 3306 && task db_up && task cover'"
+  db:
+    image: mysql:5.7
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=pregxas
+  queue:
+    image: rabbitmq:3-management
+  cache:
+    image: redis:4-alpine
+    command: ['--requirepass', 'xyzzy']

@@ -43,26 +43,31 @@ tasks:
   docker-build:
     desc: Builds and tags the docker image
     cmds:
-      - docker build -t "treelight/pregxas-api:latest" .
+      - docker build -t "treelightsoftware/pregxas-api" .
+  
+  docker-cover:
+    desc: Runs the latest built docker image
+    cmds:
+      - docker-compose --project-name "pregxas-api" up --build --always-recreate-deps --force-recreate --renew-anon-volume --abort-on-container-exit --exit-code-from "api-service"
 
   docker-run:
     desc: Runs the latest built docker image
     deps: [docker-build]
     cmds:
-      - docker run "treelight/pregxas-api"
+      - docker run "treelightsoftware/pregxas-api"
 
   docker-push:
     desc: Builds and tags the docker image then pushes it to the hub
     deps: [docker-build]
     cmds:
-      - docker push "treelight/pregxas-api:latest"
+      - docker push "treelightsoftware/pregxas-api"
 
-  docker-prod:
-    desc: Builds a slim production image.
+  docker-slim:
+    desc: Builds a slim production slimmed-down image.
     deps: [docker-build]
     cmds:
-      - docker build -f Dockerfile-prod -t "treelight/pregxas-api:prod" .
-      - docker push "treelight/pregxas-api:prod"
+      - docker build -f Dockerfile-slim -t "treelightsoftware/pregxas-api:slim" .
+      - docker push "treelightsoftware/pregxas-api:slim"
   
   db_up:
     desc: Applies database migrations
