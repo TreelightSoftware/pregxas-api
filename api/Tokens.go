@@ -13,9 +13,11 @@ const (
 	TokenEmailVerify = "email"
 	// TokenPasswordReset is to verify a forgotten password
 	TokenPasswordReset = "password_reset"
+	//TokenRefresh is a refresh token used for refreshing a new access token, such as during expiration
+	TokenRefresh = "refresh"
 )
 
-// Token represents a token, such as for a password or email verification
+// Token represents a stringified token, such as for a password or email verification
 type Token struct {
 	ID        int64  `json:"id" db:"id"`
 	Token     string `json:"token" db:"token"`
@@ -27,12 +29,21 @@ type Token struct {
 // GenerateToken generates a new token for the user
 func GenerateToken(userID int64, tokenType string) (token string, err error) {
 	rand.Seed(time.Now().UnixNano())
-	r := rand.Int63n(999999999999)
-	str := fmt.Sprintf("%d%d-%d %s", userID, rand.Intn(100000000), r, tokenType)
 	hasher := md5.New()
-	hasher.Write([]byte(str))
-	hash := hex.EncodeToString(hasher.Sum(nil))
-	token = hash[0:8]
+	r := rand.Int63n(999999999999)
+	// if the token type is refresh, then we want to do a little more and make it a little longer
+	if tokenType == TokenRefresh {
+		str := fmt.Sprintf("r_%d%d-%d %s", userID, rand.Intn(100000000), r, tokenType)
+		hasher.Write([]byte(str))
+		hash := hex.EncodeToString(hasher.Sum(nil))
+		token = fmt.Sprintf("r%d_%s", userID, hash[0:20])
+	} else {
+		str := fmt.Sprintf("%d%d-%d %s", userID, rand.Intn(100000000), r, tokenType)
+		hasher.Write([]byte(str))
+		hash := hex.EncodeToString(hasher.Sum(nil))
+		token = hash[0:8]
+	}
+
 	// delete any existing tokens
 	Config.DbConn.Exec("DELETE FROM UserTokens WHERE tokenType = ? AND userId = ?", tokenType, userID)
 	_, err = Config.DbConn.Exec("INSERT INTO UserTokens (token, created, tokenType, userId) VALUES (?, NOW(), ?, ?)", token, tokenType, userID)

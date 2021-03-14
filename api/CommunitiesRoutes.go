@@ -65,6 +65,23 @@ func CreateCommunityRoute(w http.ResponseWriter, r *http.Request) {
 	input.PlanPaidThrough = time.Now().Format("2006-01-02")
 	input.PlanDiscountPercent = 0
 
+	// verify the name doesn't already exist and isn't a
+	// reserved community name
+	foundByName, err := GetCommunityByName(input.Name)
+	if err == nil && foundByName.Name == input.Name {
+		// it already exists
+		SendError(w, http.StatusConflict, "community_create_exists", "that name is taken or reserved", input)
+		return
+	}
+
+	// ditto on the short code
+	foundByCode, err := GetCommunityByShortCode(input.ShortCode)
+	if err == nil && foundByCode.ShortCode == input.ShortCode {
+		// it already exists
+		SendError(w, http.StatusConflict, "community_create_exists", "that short code is taken or reserved", input)
+		return
+	}
+
 	err = CreateCommunity(&input)
 	if err != nil {
 		SendError(w, 400, "community_create_error", "could not create the community", err)
@@ -114,6 +131,14 @@ func UpdateCommunityRoute(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if input.Name != "" {
+		// verify the name doesn't already exist and isn't a
+		// reserved community name
+		foundByName, err := GetCommunityByName(input.Name)
+		if err == nil && foundByName.Name == input.Name {
+			// it already exists
+			SendError(w, http.StatusConflict, "community_create_name_exists", "that name is taken or reserved", input)
+			return
+		}
 		community.Name = input.Name
 	}
 

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/go-chi/render"
@@ -45,6 +46,7 @@ func SetupSiteRoute(w http.ResponseWriter, r *http.Request) {
 		SendError(w, http.StatusBadRequest, "site_secret_key_missing", "secret key for site must be sent in X-API-SECRET header", nil)
 		return
 	}
+	fmt.Printf("\n-------------\n%+v\n%+v\n", Site, foundKey)
 	if foundKey != Site.SecretKey {
 		SendError(w, http.StatusForbidden, "site_secret_key_incorrect", "secret key incorrect", nil)
 		return

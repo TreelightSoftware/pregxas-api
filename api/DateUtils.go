@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func parseTime(input string) (time.Time, error) {
+func ParseTime(input string) (time.Time, error) {
 	//run through all of the supported formats and try to convert
 	t, err := time.Parse("2006-01-02 15:04:05", input)
 	if err != nil {
@@ -26,7 +26,7 @@ func parseTime(input string) (time.Time, error) {
 
 // ParseTimeToISO takes in a time string, massages it, and attempts to convert it to RFC3399/ISO8601 format. We expect the input to be in UTC already
 func ParseTimeToISO(input string) (string, error) {
-	t, err := parseTime(input)
+	t, err := ParseTime(input)
 
 	if err != nil {
 		return "", err
@@ -38,7 +38,7 @@ func ParseTimeToISO(input string) (string, error) {
 
 // ParseTimeToDate parses an input to just its date component
 func ParseTimeToDate(input string) (string, error) {
-	t, err := parseTime(input)
+	t, err := ParseTime(input)
 
 	if err != nil {
 		return "", err
@@ -50,7 +50,7 @@ func ParseTimeToDate(input string) (string, error) {
 
 // ParseISOTimeToDBTime takes a ISO formatted string (such as from ParseTimeToISO) and converts it to MySQL's native DB format YYYY-MM-DD HH:mm:SS
 func ParseISOTimeToDBTime(input string) (string, error) {
-	t, err := parseTime(input)
+	t, err := ParseTime(input)
 	if err != nil {
 		return "", err
 	}

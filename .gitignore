@@ -17,3 +17,6 @@ pregxas-api
 
 # doc node modules
 node_modules
+
+# sonic file
+sonic/store/*

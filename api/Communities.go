@@ -51,17 +51,17 @@ type CommunityPlan struct {
 }
 
 var plans = map[string]CommunityPlan{
-	CommunityPlanFree: CommunityPlan{
+	CommunityPlanFree: {
 		AllowedUsers:          50,
 		AllowedActiveRequests: 50,
 		MonthlyPrice:          0,
 	},
-	CommunityPlanBasic: CommunityPlan{
+	CommunityPlanBasic: {
 		AllowedUsers:          200,
 		AllowedActiveRequests: 500,
 		MonthlyPrice:          499,
 	},
-	CommunityPlanPro: CommunityPlan{
+	CommunityPlanPro: {
 		AllowedUsers:          2000,
 		AllowedActiveRequests: 4000,
 		MonthlyPrice:          999,
@@ -116,6 +116,18 @@ func GetCommunityByShortCode(shortCode string) (*Community, error) {
 	(SELECT COUNT(*) FROM CommunityUserLinks cul WHERE cul.communityId = c.id AND cul.status = 'accepted') AS memberCount,
 	(SELECT COUNT(*) FROM PrayerRequestCommunityLinks prcl WHERE prcl.communityId = c.id) AS requestCount 
 	FROM Communities c WHERE c.shortCode = ?`, shortCode)
+	found.processForAPI()
+	return found, err
+}
+
+// GetCommunityByName is used when a community is being created or updated to make sure that the
+// community doesn't already exist (to avoid confusion)
+func GetCommunityByName(name string) (*Community, error) {
+	found := &Community{}
+	err := Config.DbConn.Get(found, `SELECT c.*,
+	(SELECT COUNT(*) FROM CommunityUserLinks cul WHERE cul.communityId = c.id AND cul.status = 'accepted') AS memberCount,
+	(SELECT COUNT(*) FROM PrayerRequestCommunityLinks prcl WHERE prcl.communityId = c.id) AS requestCount 
+	FROM Communities c WHERE c.name = ?`, name)
 	found.processForAPI()
 	return found, err
 }
