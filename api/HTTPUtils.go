@@ -110,30 +110,58 @@ func GetMiddlewares() []func(http.Handler) http.Handler {
 // added to the context of the HTTP request
 func JWTMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		// we use the JWT as the access token, which has an embedded expires in it
+		// and the user should be able to see when it expires
+		//
+		// this can be in one of several locations:
+		// 1) An HTTPOnly cookie with the name access_token (web)
+		// 2) The Authorization: Bearer token (oAuth or mobile)
+		// 3) The JWT header (server-to-server, integration, or mobile)
+		//
+
 		found := false
 		user := JWTUser{}
-		key := r.Header.Get("JWT")
-		var err error
-		if key == "" {
-			// see if it's all lower
-			key = r.Header.Get("jwt")
+
+		// first, check the cookie
+		accessCookie, err := r.Cookie("access_token")
+		if err == nil && accessCookie != nil {
+			// we should be able to parse it from here
+			user, err = parseJwt(accessCookie.Value)
+			if err == nil && user.ID != 0 {
+				found = true
+			}
 		}
 
-		if key != "" {
+		// not in the cookie, check the Authorization header
+		if !found {
+			accessToken := r.Header.Get("Authorization")
+			if strings.HasPrefix(accessToken, "Bearer") {
+				parts := strings.Split(accessToken, " ")
+				if len(parts) > 0 {
+					accessToken = parts[1]
+				}
+			}
+			user, err = parseJwt(accessToken)
+			if err == nil && user.ID != 0 {
+				found = true
+			}
+		}
+
+		// not in that header, so check for JWT or jwt headers
+		if !found {
+			key := r.Header.Get("JWT")
+			if key == "" {
+				// see if it's all lower
+				key = r.Header.Get("jwt")
+			}
 			user, err = parseJwt(key)
 			if err == nil && user.ID != 0 {
 				found = true
 			}
-		} else {
-			// it may be in a cookie
-			cookie, err := r.Cookie("jwt")
-			if err == nil && cookie != nil && cookie.Value != "" {
-				user, err = parseJwt(cookie.Value)
-				if err == nil && user.ID != 0 {
-					found = true
-				}
-			}
 		}
+
+		// TODO: check if expired
 
 		ctx := context.WithValue(r.Context(), AppContextKeyFound, found)
 		ctx = context.WithValue(ctx, AppContextKeyUser, user)

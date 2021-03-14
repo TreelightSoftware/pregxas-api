@@ -25,10 +25,16 @@ type User struct {
 	Username     string `json:"username" db:"username"`
 	Updated      string `json:"updated" db:"updated"`
 	LastLogin    string `json:"lastLogin" db:"lastLogin"`
-	JWT          string `json:"jwt,omitempty" db:"-"`
+	JWT          string `json:"-" db:"-"` // needed for tests at this time, no longer sent to the user
 	PlatformRole string `json:"platformRole" db:"platformRole"`
 	// CommunityStatus represents the user's status in a given community; used in queries with joins
 	CommunityStatus string `json:"communityStatus,omitempty" db:"communityStatus"`
+
+	// the tokens are used for session and state; to be closer to the eventual addition of oAuth2, notice the use of underscores instead of camel case
+	AccessToken  string `json:"access_token,omitempty" db:"-"`
+	RefreshToken string `json:"refresh_token,omitempty" db:"-"`
+	ExpiresIn    int64  `json:"expires_in,omitempty" db:"-"`
+	ExpiresAt    string `json:"expires_at,omitempty" db:"-"`
 }
 
 const (
@@ -36,6 +42,9 @@ const (
 	UserStatusPending = "pending"
 	// UserStatusVerified represents an active user
 	UserStatusVerified = "verified"
+
+	// AccessTokenExpiresSeconds is how long an access token is valid for
+	AccessTokenExpiresSeconds = 60 * 60 // 1 hour to start
 )
 
 // CreateUser creates a new user in the system
@@ -159,60 +168,33 @@ func LoginUser(email, plainPassword string) (found *User, err error) {
 func (u *User) processForDB() {
 
 	if u.Created == "" {
-		u.Created = "1970-01-01"
+		u.Created = "1970-01-01 00:00:00"
 	} else {
-		parsed, err := time.Parse("2006-01-02T15:04:05Z", u.Created)
+		parsed, err := ParseTime(u.Created)
 		if err != nil {
-			// perhaps it was already db time
-			parsed, err = time.Parse("2006-01-02 15:04:05", u.Created)
-			if err != nil {
-				// last try; no time?
-				parsed, err = time.Parse("2006-01-02", u.Created)
-				if err != nil {
-					// screw it
-					parsed, _ = time.Parse("2006-01-02", "1970-01-01")
-				}
-			}
+			parsed = time.Now()
 		}
-		u.Created = parsed.Format("2006-01-02")
+		u.Created = parsed.Format("2006-01-02 15:04:05")
 	}
 
 	if u.Updated == "" {
-		u.Updated = "1970-01-01"
+		u.Updated = "1970-01-01 00:00:00"
 	} else {
-		parsed, err := time.Parse("2006-01-02T15:04:05Z", u.Updated)
+		parsed, err := ParseTime(u.Updated)
 		if err != nil {
-			// perhaps it was already db time
-			parsed, err = time.Parse("2006-01-02 15:04:05", u.Updated)
-			if err != nil {
-				// last try; no time?
-				parsed, err = time.Parse("2006-01-02", u.Updated)
-				if err != nil {
-					// screw it
-					parsed, _ = time.Parse("2006-01-02", "1970-01-01")
-				}
-			}
+			parsed = time.Now()
 		}
-		u.Updated = parsed.Format("2006-01-02")
+		u.Updated = parsed.Format("2006-01-02 15:04:05")
 	}
 
 	if u.LastLogin == "" {
-		u.LastLogin = "1970-01-01"
+		u.LastLogin = "1970-01-01 00:00:00"
 	} else {
-		parsed, err := time.Parse("2006-01-02T15:04:05Z", u.LastLogin)
+		parsed, err := ParseTime(u.LastLogin)
 		if err != nil {
-			// perhaps it was already db time
-			parsed, err = time.Parse("2006-01-02 15:04:05", u.LastLogin)
-			if err != nil {
-				// last try; no time?
-				parsed, err = time.Parse("2006-01-02", u.LastLogin)
-				if err != nil {
-					// screw it
-					parsed, _ = time.Parse("2006-01-02", "1970-01-01")
-				}
-			}
+			parsed = time.Now()
 		}
-		u.LastLogin = parsed.Format("2006-01-02")
+		u.LastLogin = parsed.Format("2006-01-02 15:04:05")
 	}
 
 	if u.Status == "" {
@@ -242,26 +224,24 @@ func (u *User) processForAPI() {
 	if u.Created == "1970-01-01 00:00:00" {
 		u.Created = ""
 	} else {
-		u.Created, _ = ParseTimeToDate(u.Created)
+		u.Created, _ = ParseTimeToISO(u.Created)
 	}
 
 	if u.Updated == "1970-01-01 00:00:00" {
 		u.Updated = ""
 	} else {
-		u.Updated, _ = ParseTimeToDate(u.Updated)
+		u.Updated, _ = ParseTimeToISO(u.Updated)
 	}
 
 	if u.LastLogin == "1970-01-01 00:00:00" {
 		u.LastLogin = ""
 	} else {
-		u.LastLogin, _ = ParseTimeToDate(u.LastLogin)
+		u.LastLogin, _ = ParseTimeToISO(u.LastLogin)
 	}
 
 	if u.Status == "" {
 		u.Status = "pending"
 	}
-
-	u.JWT, _ = createJwt(u)
 }
 
 func (u *User) clean() {
@@ -271,11 +251,13 @@ func (u *User) clean() {
 
 // JWTUser is a user decrypted from a JWT token
 type JWTUser struct {
-	ID           int64  `json:"id"`
-	Username     string `json:"username"`
-	Email        string `json:"email"`
-	Expires      string `json:"expires"`
-	PlatformRole string `json:"platformRole" `
+	ID           int64    `json:"id"`
+	Username     string   `json:"username"`
+	Email        string   `json:"email"`
+	Expires      string   `json:"expires"`
+	ExpiresIn    int64    `json:"expires_in"`
+	PlatformRole string   `json:"platformRole"`
+	Scopes       []string `json:"scopes"`
 }
 
 type jwtClaims struct {
@@ -291,8 +273,10 @@ func createJwt(payload *User) (string, error) {
 	jwtu := JWTUser{
 		ID:           payload.ID,
 		Email:        payload.Email,
-		Expires:      time.Now().AddDate(0, 0, 1).Format("2006-01-02T15:04:05Z"), // not currently used but eventually can be set via env
+		Expires:      time.Now().Add(time.Second * AccessTokenExpiresSeconds).Format("2006-01-02T15:04:05Z"),
+		ExpiresIn:    AccessTokenExpiresSeconds,
 		PlatformRole: payload.PlatformRole,
+		Scopes:       []string{}, // not currently used
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user": jwtu,
@@ -315,6 +299,7 @@ func parseJwt(jwtString string) (JWTUser, error) {
 
 	if claims, ok := token.Claims.(*jwtClaims); ok && token.Valid {
 		u := claims.User
+		// TODO: check expiration
 		return u, nil
 	}
 	return JWTUser{}, errors.New("Could not parse jwt")

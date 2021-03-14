@@ -3,7 +3,9 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/render"
 )
@@ -27,6 +29,15 @@ type resetPasswordInput struct {
 
 // Bind binds the data for the HTTP
 func (data *resetPasswordInput) Bind(r *http.Request) error {
+	return nil
+}
+
+type refreshTokenInput struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
+// Bind binds the data for the HTTP
+func (data *refreshTokenInput) Bind(r *http.Request) error {
 	return nil
 }
 
@@ -176,9 +187,7 @@ func UpdateMyProfileRoute(w http.ResponseWriter, r *http.Request) {
 		SendError(w, http.StatusBadRequest, "user_save_error", "could not update that user's information", nil)
 		return
 	}
-	jwt := found.JWT
 	found.clean()
-	found.JWT = jwt
 	Send(w, http.StatusOK, found)
 	return
 }
@@ -194,6 +203,9 @@ func LoginUserRoute(w http.ResponseWriter, r *http.Request) {
 	}
 	input.Email = strings.ToLower(input.Email)
 
+	// we are changing to take the jwt and use it as an access token
+	// and send it to the user in an http-only cookie
+
 	found, err := LoginUser(input.Email, input.Password)
 	if err != nil {
 		SendError(w, http.StatusUnauthorized, "user_invalid_data", "could not log the user in", nil)
@@ -203,8 +215,153 @@ func LoginUserRoute(w http.ResponseWriter, r *http.Request) {
 		SendError(w, http.StatusForbidden, "user_login_not_verified", "user not verified", found)
 		return
 	}
+	// generate a JWT and send it in a header
+	jwt, err := createJwt(found)
+	accessCookie := &http.Cookie{
+		Name:     "access_token",
+		Value:    jwt,
+		Expires:  time.Now().Add(time.Second * AccessTokenExpiresSeconds),
+		MaxAge:   AccessTokenExpiresSeconds,
+		Domain:   Config.RootAPIDomain,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   IsDev() || IsProd(),
+	}
+	http.SetCookie(w, accessCookie)
+
+	// TODO: generate a refresh token
+	refreshToken, err := GenerateToken(found.ID, TokenRefresh)
+	if err != nil {
+		// something went REALLY bad, but we will allow things to continue
+		// they just won't be able to refresh their token
+		Log("warning", "refresh token could not be created", "refresh_token_error", map[string]string{
+			"error": err.Error(),
+		})
+	}
+	refreshCookie := &http.Cookie{
+		Name:     "refresh_token",
+		Value:    refreshToken,
+		MaxAge:   0,
+		Domain:   Config.RootAPIDomain,
+		Path:     "/users/refresh",
+		HttpOnly: true,
+		Secure:   IsDev() || IsProd(),
+	}
+	http.SetCookie(w, refreshCookie)
+
+	// we still return the JWT in the body of the login so that non-web integrations have access to it
+	// remember to not store it in local storage!
+	found.JWT = jwt
+	found.AccessToken = jwt
+	found.RefreshToken = refreshToken
+	found.ExpiresIn = AccessTokenExpiresSeconds
+	found.ExpiresAt = time.Now().Add(time.Second * AccessTokenExpiresSeconds).Format("2006-01-02T15:04:05Z")
+
 	found.Password = ""
 	Send(w, http.StatusOK, found)
+	return
+}
+
+// RefreshAccessTokenRoute takes in the refresh_token from the cookie and attempts to
+// refresh the access token. The refresh token can be in either a secured cookie (web) or the body (anything else).
+// The return will be the same as if the user logged in
+func RefreshAccessTokenRoute(w http.ResponseWriter, r *http.Request) {
+
+	// first check the cookies
+	inputToken := ""
+	cookie, err := r.Cookie("refresh_token")
+	if err == nil && cookie != nil {
+		inputToken = cookie.Value
+	}
+	if inputToken == "" {
+		// check the POST
+		input := refreshTokenInput{}
+		render.Bind(r, &input)
+		inputToken = input.RefreshToken
+	}
+
+	if inputToken == "" {
+		// it's still missing, so error out
+		SendError(w, http.StatusBadRequest, "refresh_token_missing", "missing refresh_token", nil)
+		return
+	}
+
+	// ok, so now we split; a refresh token will match a specific pattern
+	parts := strings.Split(inputToken, "_")
+	if len(parts) == 0 {
+		SendError(w, http.StatusBadRequest, "refresh_token_invalid", "the passed in refresh token is invalid", nil)
+		return
+	}
+	// the first part should be the ruserId
+	userIDString := parts[0][1:]
+	userID, err := strconv.ParseInt(userIDString, 10, 64)
+	if err != nil {
+		SendError(w, http.StatusBadRequest, "refresh_token_invalid", "the passed in refresh token is invalid", nil)
+		return
+	}
+
+	// now find the token
+	token, err := GetTokenForTest(userID, TokenRefresh)
+	if err != nil {
+		SendError(w, http.StatusBadRequest, "refresh_token_invalid", "the passed in refresh token is invalid", nil)
+		return
+	}
+
+	if token != inputToken {
+		SendError(w, http.StatusBadRequest, "refresh_token_invalid", "the passed in refresh token is invalid", nil)
+		return
+	}
+
+	// they match, so let's relog them in with a new access token; refresh token can stay
+	user, err := GetUserByID(userID)
+	if err != nil {
+		// well this is awkward...
+		SendError(w, http.StatusForbidden, "refresh_token_user", "the user is not valid", map[string]string{
+			"userID": userIDString,
+			"error":  err.Error(),
+		})
+		return
+	}
+	jwt, err := createJwt(user)
+	accessCookie := &http.Cookie{
+		Name:     "access_token",
+		Value:    jwt,
+		Expires:  time.Now().Add(time.Second * AccessTokenExpiresSeconds),
+		MaxAge:   AccessTokenExpiresSeconds,
+		Domain:   Config.RootAPIDomain,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   IsDev() || IsProd(),
+	}
+	http.SetCookie(w, accessCookie)
+
+	Send(w, http.StatusOK, map[string]interface{}{
+		"access_token": jwt,
+		"expires_in":   AccessTokenExpiresSeconds,
+		"expires_at":   time.Now().Add(time.Second & AccessTokenExpiresSeconds).Format("2006-01-02T15:04:05Z"),
+	})
+	return
+}
+
+// LogoutUserRoute nukes the cookies but current does NOT delete the refresh token
+func LogoutUserRoute(w http.ResponseWriter, r *http.Request) {
+	cookie := &http.Cookie{
+		Name:     "access_token",
+		Value:    "",
+		Expires:  time.Now(),
+		MaxAge:   -1,
+		Domain:   Config.RootAPIDomain,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   IsDev() || IsProd(),
+	}
+	http.SetCookie(w, cookie)
+	cookie.Name = "refresh_token"
+	http.SetCookie(w, cookie)
+
+	Send(w, http.StatusOK, map[string]bool{
+		"loggedOut": true,
+	})
 	return
 }
 

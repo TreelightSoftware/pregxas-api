@@ -30,6 +30,7 @@ type ConfigStruct struct {
 	dbName            string
 	dbString          string
 	DbConn            *sqlx.DB
+	RootAPIDomain     string // needed for the cookies
 	RootAPIURL        string
 	RootAPIPort       string
 	WebURL            string
@@ -57,6 +58,7 @@ func ConfigSetup() *ConfigStruct {
 	c.RootAPIPort = fmt.Sprintf(":%s", port)
 
 	c.RootAPIURL = envHelper("PREGXAS_API_URL", fmt.Sprintf("http://localhost:%s/", c.RootAPIPort))
+	c.RootAPIDomain = envHelper("PREGXAS_WEB_DOMAIN", "localhost")
 	c.WebURL = envHelper("PREGXAS_WEB_URL", "http://localhost:3000/")
 
 	c.Environment = envHelper("PREGXAS_ENV", "test")
@@ -206,6 +208,14 @@ func IsProd() bool {
 	return false
 }
 
+// IsDev is a helper func to determine if we are on a development server
+func IsDev() bool {
+	if Config.Environment == "development" || Config.Environment == "dev" {
+		return true
+	}
+	return false
+}
+
 func envHelper(variable, defaultValue string) string {
 	found := os.Getenv(variable)
 	if found == "" {
@@ -234,6 +244,8 @@ func SetupApp() *chi.Mux {
 	r.Get("/me", GetMyProfileRoute)
 	r.Patch("/me", UpdateMyProfileRoute)
 	r.Post("/users/login", LoginUserRoute)
+	r.Post("/users/logout", LogoutUserRoute)
+	r.Post("/users/refresh", RefreshAccessTokenRoute)        // TODO: needs OAS3 docs
 	r.Post("/users/signup", SignupUserRoute)                 // TODO: needs OAS3 docs
 	r.Post("/users/signup/verify", VerifyEmailAndTokenRoute) // TODO: needs OAS3 docs
 	r.Post("/users/login/reset", ResetPasswordStartRoute)

@@ -58,9 +58,10 @@ CREATE TABLE `UserTokens` (
   `token` varchar(64) DEFAULT NULL,
   `userId` int(11) NOT NULL,
   `created` datetime NOT NULL,
-  `tokenType` enum('email','password_reset') NOT NULL DEFAULT 'email',
+  `tokenType` enum('email','password_reset','refresh') NOT NULL DEFAULT 'email',
   PRIMARY KEY (`id`),
-  KEY `userId` (`userId`)
+  KEY `userId` (`userId`),
+  KEY `userId_type` (`userId`, `tokenType`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `PrayerRequests` (
